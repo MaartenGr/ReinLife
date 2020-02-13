@@ -3,10 +3,10 @@ from stable_baselines.common.vec_env import DummyVecEnv, VecNormalize
 from stable_baselines import PPO2, DQN, SAC
 from Field import MazeEnv
 
-env = DummyVecEnv([lambda: MazeEnv()])
+env = DummyVecEnv([lambda: MazeEnv(width=10, height=12)])
 model = DQN(MlpPolicy, env, learning_rate=0.001, verbose=1)
 
-model.learn(15_000, log_interval=100)
+model.learn(10_000, log_interval=100)
 
 obs = env.reset()
 while True:
