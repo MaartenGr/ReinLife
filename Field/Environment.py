@@ -6,26 +6,26 @@ from gym import spaces
 
 # Pygame
 import pygame
-from pygame import gfxdraw
 
 # Custom
-from Field.utils import check_pygame_exit, Grid
+from Field.utils import check_pygame_exit
 from Field import Point
 
 
-class MazeEnv(gym.Env):
+class Environment(gym.Env):
     def __init__(self, width=30, height=30, mode='computer'):
         self.width = width
         self.height = height
         self.action_space = spaces.Discrete(4)
-        self.observation_space = spaces.Box(low=-max([height, width]),
-                                            high=max([height, width]),
-                                            shape=(1, 2),
-                                            dtype=np.int16)
+        self.observation_space = spaces.Box(low=-1,
+                                            high=1,
+                                            shape=(2, 5, 5),
+                                            dtype=np.float)
         self.current_episode = 0
         self.scores = []
         self.mode = mode
         self.grid_size = 16
+        self.tile_location = np.random.randint(0, 4, (self.height, self.width))
         
         # Init variables
         self._reset_variables()
@@ -34,7 +34,7 @@ class MazeEnv(gym.Env):
         """ Reset the environment to the beginning """
         self._reset_variables()
         self._init_objects()  # Init player and food pellets
-        obs = self._get_obs()
+        obs = self.update_fov()
 
         return obs
 
@@ -52,10 +52,10 @@ class MazeEnv(gym.Env):
         # Add pellet randomly
         if np.random.random() < 0.1:
             food_pellet = Point(x=np.random.randint(self.width - 1),
-                                y=np.random.randint(self.height - 1), value=2)
+                                y=np.random.randint(self.height - 1), value=1)
             self.food.append(food_pellet)
 
-        obs = self._get_obs()
+        obs = self.update_fov()
 
         return obs, reward, done, {}
 
@@ -77,30 +77,54 @@ class MazeEnv(gym.Env):
         clock = pygame.time.Clock()
         clock.tick(5)
         self.screen.fill((255, 255, 255))
+        self._draw_tiles()
 
-    def _get_obs(self):
-        closest_food = self._get_closest_food_pellet()
-        obs = np.array([closest_food.x - self.player.x, closest_food.y - self.player.y])
-        return obs
+    def update_fov(self):
+        # Initialize matrix
+        fov = np.zeros([2, 5, 5])
+
+        if self.player.x <= 2:
+            for i in range(5):
+                fov[0][i, 0] = 1
+        if self.width - self.player.x <= 2:
+            for i in range(5):
+                fov[0][i, 4] = 1
+        if self.player.y <= 2:
+            fov[0][0] = 1
+        if self.height - self.player.y <= 2:
+            fov[0][-1] = 1
+
+        for food in self.food:
+            if abs(food.x - self.player.x) <= 2 and abs(food.y - self.player.y) <= 2:
+                diff_x = food.x - self.player.x
+                diff_y = self.player.y - food.y
+                fov[1][2 - diff_y, 2 + diff_x] = food.value
+        return fov
 
     def _init_objects(self):
-        # Initialize food pellets and player
+        # Initialize food pellets
         for i in range(3):
             food_pellet = Point(x=np.random.randint(self.width - 1),
-                                y=np.random.randint(self.height - 1), value=2)
+                                y=np.random.randint(self.height - 1), value=1)
+            self.food.append(food_pellet)
+
+        # Initialize poison pellets
+        for i in range(3):
+            food_pellet = Point(x=np.random.randint(self.width - 1),
+                                y=np.random.randint(self.height - 1), value=-1)
             self.food.append(food_pellet)
 
         self.player = self._add_point(x=np.random.randint(self.width - 1),
                                       y=np.random.randint(self.height - 1),
-                                      value=1)
+                                      value=0)
 
     def _reset_variables(self):
-        self.health = 100
+        self.health = 200
         self.total_reward = 0
         self.coordinates = []
         self.food = []
         self.current_step = 0
-        self.max_step = 20
+        self.max_step = 30
 
     def _add_point(self, x, y, value):
         """ Create and add a point to all coordinates """
@@ -135,10 +159,16 @@ class MazeEnv(gym.Env):
         done = False
 
         if np.array_equal(self.player.coordinates, closest_food.coordinates):
-            self.health += 50
-            self.food.remove(closest_food)
-            reward = 100
-            self.total_reward += 100
+            if closest_food.value == 1:
+                self.health += 50
+                self.food.remove(closest_food)
+                reward = 300
+                self.total_reward += 300
+            elif closest_food.value == -1:
+                self.health -= 20
+                self.food.remove(closest_food)
+                reward -= 300
+                self.total_reward -= 300
         elif self.health <= 0:
             reward -= 400
             self.total_reward -= 400
@@ -148,22 +178,32 @@ class MazeEnv(gym.Env):
 
         return reward, done
 
-    def _draw(self):
-        # Draw Grid
-        Grid(surface=self.screen, cellSize=16).create_grid()
+    def _get_tiles(self):
+        tile_1 = pygame.image.load(r'Sprites/tile_green_dark.png')
+        tile_2 = pygame.image.load(r'Sprites/tile_green_light.png')
+        tile_3 = pygame.image.load(r'Sprites/tile_green_dark_grass.png')
+        tile_4 = pygame.image.load(r'Sprites/tile_green_light_grass.png')
+        return [tile_3, tile_4, tile_3, tile_4]
 
+    def _draw_tiles(self):
+        tiles = self._get_tiles()
+        for i in range(self.width):
+            for j in range(self.height):
+                self.screen.blit(tiles[self.tile_location[j, i]], (i*16, j*16))
+
+    def _draw(self):
         # Draw player
-        pygame.gfxdraw.filled_circle(self.screen,
-                                     round(self.player.x * self.grid_size)+round(self.grid_size/2),
-                                     round(self.player.y * self.grid_size)+round(self.grid_size/2),
-                                     int(self.grid_size / 2), (255, 0, 0))
+        player = pygame.image.load(r'Sprites/player.png')
+        self.screen.blit(player, (self.player.x * 16, self.player.y * 16))
 
         # Draw food
+        apple = pygame.image.load(r'Sprites/apple.png')
+        poison = pygame.image.load(r'Sprites/poison.png')
         for food in self.food:
-            pygame.gfxdraw.filled_circle(self.screen,
-                                         round(food.x * self.grid_size)+round(self.grid_size/2),
-                                         round(food.y * self.grid_size)+round(self.grid_size/2),
-                                         int(self.grid_size / 2), (0, 255, 0))
+            if food.value == 1:
+                self.screen.blit(apple, (food.x * 16, food.y * 16))
+            elif food.value == -1:
+                self.screen.blit(poison, (food.x * 16, food.y * 16))
 
         pygame.display.update()
 
@@ -181,6 +221,8 @@ class MazeEnv(gym.Env):
                         action = 0
                     if event.key == pygame.K_LEFT:
                         action = 3
-            self.step(action)
+                    self.step(action)
+                    print(self.update_fov(), self.health)
+
 
 
