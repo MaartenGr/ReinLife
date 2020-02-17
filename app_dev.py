@@ -1,7 +1,18 @@
-from stable_baselines.common.vec_env import DummyVecEnv
-from Field.Environment import Environment
+# from stable_baselines.common.vec_env import DummyVecEnv
+# from Field.Environment import Environment
+# from Field import MultiEnvironment as Environment
+#
+# env = DummyVecEnv([lambda: Environment(mode='human', width=30, height=30)])
+# obs = env.reset()
+# while True:
+#     is_running = env.render()
+#     if not is_running:
+#         break
 
-env = DummyVecEnv([lambda: Environment(mode='human', width=10, height=12)])
+
+
+from Field import MultiEnvironment as Environment
+env = Environment(mode='human', width=30, height=30)
 obs = env.reset()
 while True:
     is_running = env.render()
