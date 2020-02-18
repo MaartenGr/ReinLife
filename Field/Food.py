@@ -7,7 +7,7 @@ class Food:
         self.y = y
         self.value = value
         self.coordinates = np.array([x, y], dtype=int)
-        self.entity_type = "Food"
+        self.name = "Food"
 
     def update(self, x, y):
         self.x = x

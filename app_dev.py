@@ -10,8 +10,9 @@
 #         break
 
 
+from Field.MultiEnvironmentTest import MultiEnvironment as Environment
 
-from Field import MultiEnvironment as Environment
+# from Field import MultiEnvironment as Environment
 env = Environment(mode='human', width=30, height=30)
 obs = env.reset()
 while True:

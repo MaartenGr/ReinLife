@@ -44,7 +44,7 @@ class ReplayBuffer():
 class Qnet(nn.Module):
     def __init__(self):
         super(Qnet, self).__init__()
-        self.fc1 = nn.Linear(2*7*7, 64)
+        self.fc1 = nn.Linear(3*7*7, 64)
         self.fc2 = nn.Linear(64, 64)
         self.fc3 = nn.Linear(64, 4)
 

@@ -12,7 +12,7 @@ import torch.optim as optim
 import torch
 
 from Field.dqn import ReplayBuffer, Qnet, train
-from Field import MultiEnvironment as Environment
+from Field.MultiEnvironmentTest import MultiEnvironment as Environment
 
 #Hyperparameters
 learning_rate = 0.0005
@@ -35,21 +35,25 @@ print_interval = 10
 scores = [0.0 for _ in range(len(agents))]
 
 
-for n_epi in range(150):
+for n_epi in range(15):
+
+    # Initialize Variables
     epsilon = max(0.01, 0.08 - 0.01 * (n_epi / 200))  # Linear annealing from 8% to 1%
     s = env.reset()
     dones = [False for _ in range(20)]
 
     while not all(dones):
 
+        # Get Action
         actions = []
         for i in range(len(agents)):
             a = agents[i].sample_action(torch.from_numpy(s[i].flatten()).float(), epsilon)
             actions.append(a)
 
-        # print(actions)
+        # Take Action --> Can only be taken all at the same time
         s_prime, r, dones, info = env.step(actions)
 
+        # Learn only if still alive (not done)
         for i in range(len(agents)):
             if not dones[i]:
                 scores[i] += r[i]

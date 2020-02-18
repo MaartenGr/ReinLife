@@ -8,7 +8,8 @@ class Agent:
         self.health = 200
         self.value = value
         self.coordinates = np.array([x, y], dtype=int)
-        self.entity_type = "Agent"
+        self.name = "Agent"
+        self.dead = False
 
     def update(self, x, y):
         self.x = x
