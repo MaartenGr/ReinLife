@@ -6,10 +6,10 @@ class Food:
         self.x = x
         self.y = y
         self.value = value
-        self.coordinates = np.array([x, y], dtype=int)
+        self.coordinates = (x, y)
         self.name = "Food"
 
     def update(self, x, y):
         self.x = x
         self.y = y
-        self.coordinates = np.array([x, y], dtype=int)
+        self.coordinates = (x, y)

@@ -10,10 +10,11 @@
 #         break
 
 
-from Field.MultiEnvironmentTest import MultiEnvironment as Environment
+from Field.MultiEnvironment import MultiEnvironment as Environment
+from Field import GridWorld as Environment
 
 # from Field import MultiEnvironment as Environment
-env = Environment(mode='human', width=30, height=30)
+env = Environment(mode='human', width=15, height=15, nr_agents=1)
 obs = env.reset()
 while True:
     is_running = env.render()

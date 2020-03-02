@@ -42,11 +42,12 @@ class ReplayBuffer():
 
 
 class Qnet(nn.Module):
-    def __init__(self):
+    def __init__(self, input_dim):
         super(Qnet, self).__init__()
-        self.fc1 = nn.Linear(3*7*7, 64)
+        # self.fc1 = nn.Linear((2*7*7)+3, 64)
+        self.fc1 = nn.Linear(input_dim, 64)
         self.fc2 = nn.Linear(64, 64)
-        self.fc3 = nn.Linear(64, 4)
+        self.fc3 = nn.Linear(64, 8)
 
     def forward(self, x):
         x = F.relu(self.fc1(x))
