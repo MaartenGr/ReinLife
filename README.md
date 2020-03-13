@@ -12,6 +12,17 @@ I wanted to look more into the Reinforcement Learning space and decided to forgo
    100. [To Do](#todo)
 <!--te-->
 
+
+Working:
+* app_fast_dqn
+* app_fast_dqn_evolve
+* app_fast_ppo2a
+
+* Changed reward structure such that is works with all of the above
+
+
+
+
 <a name="env"/></a>
 ###  Environment
 
