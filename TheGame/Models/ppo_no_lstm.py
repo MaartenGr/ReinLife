@@ -20,7 +20,7 @@ class PPO(nn.Module):
         super(PPO, self).__init__()
         self.data = []
 
-        self.fc1 = nn.Linear(102, 256)
+        self.fc1 = nn.Linear(152, 256)
         self.fc_pi = nn.Linear(256, 8)
         self.fc_v = nn.Linear(256, 1)
         self.optimizer = optim.Adam(self.parameters(), lr=learning_rate)

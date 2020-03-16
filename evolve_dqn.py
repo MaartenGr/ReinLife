@@ -8,7 +8,7 @@ best_score = -10_000
 print_interval = 10
 
 # Initialize Env
-brains = [DQNAgent(102, learning_rate) for _ in range(nr_agents)]
+brains = [DQNAgent(152, learning_rate) for _ in range(nr_agents)]
 env = Environment(width=20, height=20, nr_agents=nr_agents, evolution=True, fps=20, brains=brains, grid_size=24)
 env.max_step = 30_000
 s = env.reset()

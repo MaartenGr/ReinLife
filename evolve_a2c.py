@@ -8,12 +8,12 @@ best_score = -10_000
 print_interval = 10
 
 # Init env
-brains = [A2CAgent(102, 8) for _ in range(nr_agents)]
+brains = [A2CAgent(152, 8) for _ in range(nr_agents)]
 env = Environment(width=20, height=20, nr_agents=nr_agents, evolution=True, brains=brains, grid_size=24)
 env.max_step = 30_000
 s = env.reset()
 
-for n_epi in range(2_000):
+for n_epi in range(3_000):
     actions = [agent.brain.get_action(s[i]) for i, agent in enumerate(env.agents)]
     s_prime, r, dones, infos = env.step(actions)
 

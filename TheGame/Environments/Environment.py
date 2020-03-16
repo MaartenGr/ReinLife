@@ -1,11 +1,9 @@
 import random
-import pygame
 import numpy as np
 import copy
 import gym
 from gym import spaces
 
-from TheGame.utils import check_pygame_exit
 from TheGame.Entities.Agent import Agent
 from TheGame.Environments.Grid import Grid
 from TheGame.Environments.utils import Actions, Entities
@@ -134,7 +132,8 @@ class GridWorld(gym.Env):
                     info = "Dead"
                 elif self.evolution:
                     # reward = 5
-                    reward = 5 + (5 * sum([1 for other_agent in self.agents if agent.gen == other_agent.gen]))
+                    # reward = 5 + (5 * sum([1 for other_agent in self.agents if agent.gen == other_agent.gen]))
+                    reward = sum([other_agent.health / 200 for other_agent in self.agents if agent.gen == other_agent.gen])
                 elif self.current_step >= self.max_step:
                     done = True
                     reward = 400
@@ -226,12 +225,26 @@ class GridWorld(gym.Env):
 
             family_flat = list(family.flatten())
 
+            # See health of others
+            # The i, j coordinates are taken from within the fov-field, which
+            # doesn't match the global i, j coordinates. Therefore, they need to be adjusted using the difference
+            # between the local i, j coordinates and the global coordinates of the agents (as that one is at the center)
+            loc_agents = np.where(observation == self.entities.agent)
+            entity_health = np.zeros([7, 7])
+            for i_local, j_local in zip(loc_agents[0], loc_agents[1]):
+                i_global, j_global = agent.x + i_local - 3, agent.y + j_local - 3
+                for other_agent in self.agents:
+                    if other_agent.coordinates == [i_global, j_global]:
+                        entity_health[i_local, j_local] = other_agent.health / 200
+            nr_gens = sum([1 for other_agent in self.agents if agent.gen == other_agent.gen])
+            entity_health_flat = list(entity_health.flatten())
+
             reproduced = 0
             if agent.reproduced:
                 reproduced = 1
 
-            fov = np.array(fov_food + family_flat + [agent.health/200] +
-                           [agent.x/self.width] + [agent.y/self.height] + [reproduced])
+            fov = np.array(fov_food + family_flat + entity_health_flat + [agent.health/200] +
+                           [agent.x/self.width] + [agent.y/self.height] + [reproduced] + [nr_gens])
 
             observations.append(fov)
 

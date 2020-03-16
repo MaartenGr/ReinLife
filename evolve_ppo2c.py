@@ -3,7 +3,7 @@ from TheGame import Environment
 import numpy as np
 
 # Hyperparameters
-state_dim = 102
+state_dim = 152
 action_dim = 8
 render = False
 solved_reward = 230  # stop training if avg_reward > solved_reward
@@ -32,7 +32,7 @@ s = env.reset()
 good = 0
 error = 0
 t = 0
-for n_epi in range(10_000):
+for n_epi in range(30_000):
     # actions = [agent.brain.policy_old.act(s[i], agent.brain.memory) for i, agent in enumerate(env.agents)]
 
     actions = []
