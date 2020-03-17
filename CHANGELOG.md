@@ -5,8 +5,13 @@ follows the following style:
 - Added
 - Changed
 - Fixed
-- Removed 
+- Removed
 
+
+## [0.2.2] - 2020-03-13
+
+### Fixed
+- The fov for entities and their health was incorrect and now fixed.  
 
 ## [0.2.1] - 2020-03-13
 

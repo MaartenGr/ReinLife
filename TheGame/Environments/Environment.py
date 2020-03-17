@@ -197,58 +197,73 @@ class GridWorld(gym.Env):
         for agent in self.agents:
             observation = self.grid.fov(agent.x, agent.y, 3)
 
-            # Extract food
+            # Food
             fov_food = np.zeros([7, 7])
             loc = np.where(observation == 1)
             for i, j in zip(loc[0], loc[1]):
                 fov_food[i, j] = 1
 
+            # Poison
             loc = np.where(observation == 2)
             for i, j in zip(loc[0], loc[1]):
                 fov_food[i, j] = -1
             fov_food = list(fov_food.flatten())
 
-            # See family
-            # The i, j coordinates are taken from within the fov-field, which
-            # doesn't match the global i, j coordinates. Therefore, they need to be adjusted using the difference
-            # between the local i, j coordinates and the global coordinates of the agents (as that one is at the center)
-            loc_agents = np.where(observation == self.entities.agent)
-            family = np.zeros([7, 7])
-            for i_local, j_local in zip(loc_agents[0], loc_agents[1]):
-                i_global, j_global = agent.x + i_local - 3, agent.y + j_local - 3
-                for other_agent in self.agents:
-                    if other_agent.coordinates == [i_global, j_global]:
-                        if other_agent.gen == agent.gen:
-                            family[i_local, j_local] = 1
-                        else:
-                            family[i_local, j_local] = -1
-
-            family_flat = list(family.flatten())
-
-            # See health of others
-            # The i, j coordinates are taken from within the fov-field, which
-            # doesn't match the global i, j coordinates. Therefore, they need to be adjusted using the difference
-            # between the local i, j coordinates and the global coordinates of the agents (as that one is at the center)
-            loc_agents = np.where(observation == self.entities.agent)
-            entity_health = np.zeros([7, 7])
-            for i_local, j_local in zip(loc_agents[0], loc_agents[1]):
-                i_global, j_global = agent.x + i_local - 3, agent.y + j_local - 3
-                for other_agent in self.agents:
-                    if other_agent.coordinates == [i_global, j_global]:
-                        entity_health[i_local, j_local] = other_agent.health / 200
+            family_obs = self._get_obs_entities(agent, health=False, flatten=True)
+            entity_health_obs = self._get_obs_entities(agent, health=True, flatten=True)
             nr_gens = sum([1 for other_agent in self.agents if agent.gen == other_agent.gen])
-            entity_health_flat = list(entity_health.flatten())
 
             reproduced = 0
             if agent.reproduced:
                 reproduced = 1
 
-            fov = np.array(fov_food + family_flat + entity_health_flat + [agent.health/200] +
+            fov = np.array(fov_food + family_obs + entity_health_obs + [agent.health/200] +
                            [agent.x/self.width] + [agent.y/self.height] + [reproduced] + [nr_gens])
 
             observations.append(fov)
 
         return observations, None
+
+    def _get_obs_entities(self, agent, health=False, flatten=False):
+        entities = np.zeros([7, 7])
+        observation = self.grid.fov(agent.x, agent.y, 3)
+        loc_agents = np.where(observation == self.entities.agent)
+
+        for i_local, j_local in zip(loc_agents[0], loc_agents[1]):
+            diff_x = i_local - 3
+            diff_y = j_local - 3
+
+            # Get coordinates if within normal range
+            global_x = agent.x + diff_x
+            global_y = agent.y + diff_y
+
+            # Get coordinates if through wall (left vs right)
+            if global_y < 0:
+                global_y = self.width + global_y
+            elif global_y >= self.width:
+                global_y = global_y - self.width
+
+            # Get coordinates if through wall (up vs down)
+            if global_x < 0:
+                global_x = self.height + global_x
+            elif global_x >= self.height:
+                global_x = global_x - self.height
+
+            # Find entities within fov and apply either health of family status
+            for other_agent in self.agents:
+                if other_agent.coordinates == [global_x, global_y]:
+                    if health:
+                        entities[i_local, j_local] = other_agent.health / 200
+                    elif other_agent.gen == agent.gen:
+                        entities[i_local, j_local] = 1  # Share same gene
+                    else:
+                        entities[i_local, j_local] = -1  # Doesn't share same gene
+
+        if flatten:
+            entities = list(entities.flatten())
+            return entities
+
+        return entities
 
     def _prepare_movement(self, actions):
         """ Store the target coordinates agents want to go to """

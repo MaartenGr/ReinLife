@@ -153,3 +153,6 @@ issues with the implementation itself. Therefore, it is not recommeded to use it
 * Create a nicer interface for the application 
 * New entities through reproduction are put randomly on the map 
 which should be within an entities fov
+
+NOTE: The environment needs to be at least 7x7 otherwise it gives issues with
+the fov. 
