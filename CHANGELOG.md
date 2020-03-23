@@ -8,6 +8,22 @@ follows the following style:
 - Removed
 
 
+## [0.2.3] - 2020-XX-XX
+
+### Fixed
+- Rendering only worked for squares, now fixed
+- Food generated is now proportional to size of grid
+- The best agent was tracked in the environment by age instead of fitness
+- Fixed an infitine while loop in movement (I think...)
+
+### Added
+- Can save and load A2C, DQN, and PERDQN 'brains'
+- Choose between the top 5 brains
+- Red border for an entity if it attacks
+
+### Changed
+- Updated the basic structure of the grid which results in a minor speed-up
+
 ## [0.2.2] - 2020-03-13
 
 ### Fixed

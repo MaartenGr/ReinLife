@@ -141,10 +141,10 @@ class DQN(nn.Module):
 # it uses Neural Network to approximate q function
 # and prioritized experience replay memory & target q network
 class DQNAgent():
-    def __init__(self, state_size, action_size):
+    def __init__(self, state_size, action_size, load_model=False):
         # if you want to see Cartpole learning, then change to True
         self.render = False
-        self.load_model = False
+        self.method = "PERDQN"
 
         # get size of state and action
         self.state_size = state_size
@@ -174,8 +174,10 @@ class DQNAgent():
         # initialize target model
         self.update_target_model()
 
-        if self.load_model:
-            self.model = torch.load('save_model/cartpole_dqn')
+        if load_model:
+            self.model.load_state_dict(torch.load(load_model))
+            self.model.eval()
+            self.epsilon = 0.0
 
     # weight xavier initialize
     def weights_init(self, m):

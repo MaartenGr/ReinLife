@@ -1,35 +1,30 @@
 from TheGame.Models.a2c import A2CAgent
 from TheGame import Environment
+from TheGame.utils import Results
 
 # Hyperparameters
-nr_agents = 1
-learning_rate = 0.0005
-best_score = -10_000
-print_interval = 10
+max_epi = 10_000
+save_best = True
+track_results = Results(print_interval=100, interactive=True)
 
 # Init env
-brains = [A2CAgent(152, 8) for _ in range(nr_agents)]
-env = Environment(width=20, height=20, nr_agents=nr_agents, evolution=True, brains=brains, grid_size=24)
-env.max_step = 30_000
+env = Environment(width=20, height=20, nr_agents=1, evolution=True, brains=[A2CAgent(152, 8)], grid_size=24)
 s = env.reset()
 
-for n_epi in range(3_000):
+for n_epi in range(max_epi):
     actions = [agent.brain.get_action(s[i]) for i, agent in enumerate(env.agents)]
     s_prime, r, dones, infos = env.step(actions)
 
-    # Learn only if still alive (not done)
     for i, agent in enumerate(env.agents):
-        if agent.fitness > best_score:
-            best_score = agent.fitness
-
         agent.brain.train_model(s[i], actions[i], r[i], s_prime[i], dones[i])
 
+    track_results.update_results(env.agents, n_epi, actions)
     s = env.update_env()
 
-    if n_epi % 100 == 0:
-        print(f"Best score: {best_score}. Nr episodes: {n_epi}. Nr_agents: {len(env.agents)}")
-
     # env.render(fps=50)
+
+if save_best:
+    env.save_best_brain(max_epi)
 
 while True:
     actions = []

@@ -13,7 +13,9 @@ class Actions(IntEnum):
     attack_left = 7
 
 
-class Entities(IntEnum):
+class EntityTypes(IntEnum):
+    empty = 0
     food = 1
     poison = 2
     agent = 3
+    kin = 4

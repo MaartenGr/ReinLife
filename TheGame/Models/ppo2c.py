@@ -73,6 +73,8 @@ class PPO:
 
         self.MseLoss = nn.MSELoss()
 
+        self.method = "PPO_V2"
+
         # Memory
         self.actions = []
         self.states = []

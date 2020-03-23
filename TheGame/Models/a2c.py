@@ -7,14 +7,16 @@ from keras.optimizers import Adam
 
 
 class A2CAgent:
-    def __init__(self, state_size, action_size):
+    def __init__(self, state_size, action_size, load_model=False):
         # if you want to see Cartpole learning, then change to True
         self.render = False
-        self.load_model = False
+        self.load_model = load_model
         # get size of state and action
         self.state_size = state_size
         self.action_size = action_size
         self.value_size = 1
+
+        self.method = 'A2C'
 
         # These are hyper parameters for the Policy Gradient
         self.discount_factor = 0.99
@@ -26,8 +28,9 @@ class A2CAgent:
         self.critic = self.build_critic()
 
         if self.load_model:
-            self.actor.load_weights("./save_model/cartpole_actor.h5")
-            self.critic.load_weights("./save_model/cartpole_critic.h5")
+            self.actor.load_weights(load_model)
+            # self.actor.load_weights("./save_model/cartpole_actor.h5")
+            # self.critic.load_weights("./save_model/cartpole_critic.h5")
 
     # approximate policy and value using Neural Network
     # actor: state is input and probability of each action is output of model

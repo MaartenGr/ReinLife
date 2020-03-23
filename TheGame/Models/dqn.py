@@ -15,14 +15,19 @@ batch_size = 32
 
 
 class DQNAgent:
-    def __init__(self, input_dim, learning_rate):
+    def __init__(self, input_dim, learning_rate=0.0005, load_model=False):
         self.agent = Qnet(input_dim)
         self.target = Qnet(input_dim)
         self.target.load_state_dict(self.agent.state_dict())
         self.memory = ReplayBuffer()
         self.optimizer = optim.Adam(self.agent.parameters(), lr=learning_rate)
+        self.method = 'DQN'
 
-    def get_action(self, s, epsilon):
+        if load_model:
+            self.agent.load_state_dict(torch.load(load_model))
+            self.agent.eval()
+
+    def get_action(self, s, epsilon=0):
         return self.agent.sample_action(s, epsilon)
 
     def memorize(self, s, a, r, s_prime, done):

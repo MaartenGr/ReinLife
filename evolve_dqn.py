@@ -1,30 +1,27 @@
 from TheGame.Models.dqn import DQNAgent
 from TheGame import Environment
+from TheGame.utils import Results
 
 # Hyperparameters
+save_best = True
+max_epi = 5_000
 learning_rate = 0.0005
-nr_agents = 1
-best_score = -10_000
-print_interval = 10
+track_results = Results(print_interval=100, interactive=True)
 
 # Initialize Env
-brains = [DQNAgent(152, learning_rate) for _ in range(nr_agents)]
-env = Environment(width=20, height=20, nr_agents=nr_agents, evolution=True, fps=20, brains=brains, grid_size=24)
-env.max_step = 30_000
+env = Environment(width=20, height=20, nr_agents=1, evolution=True, fps=20,
+                  brains=[DQNAgent(152, learning_rate)], grid_size=24)
 s = env.reset()
 
-for n_epi in range(3_000):
+for n_epi in range(max_epi):
     if n_epi % 30 == 0:
-        epsilon = max(0.01, 0.08 - 0.08 * (n_epi / 500))  # Linear annealing from 8% to 1%
+        epsilon = max(0.01, 0.08 - 0.08 * (n_epi / max_epi))  # Linear annealing from 8% to 1%
 
     actions = [agent.brain.get_action(s[i], epsilon) for i, agent in enumerate(env.agents)]
     s_prime, r, dones, infos = env.step(actions)
 
     # Memorize
     for i, agent in enumerate(env.agents):
-        if agent.fitness > best_score:
-            best_score = agent.fitness
-
         agent.brain.memorize(s[i], actions[i], r[i] / 200.0, s_prime[i], dones[i])
 
     # Learn
@@ -32,12 +29,13 @@ for n_epi in range(3_000):
         if agent.age % 20 == 0 or agent.dead:
             agent.brain.train()
 
+    track_results.update_results(env.agents, n_epi, actions)
     s = env.update_env()
 
-    if n_epi % 100 == 0:
-        print(f"Best score: {best_score}. Nr episodes: {n_epi}. Nr_agents: {len(env.agents)}")
-
     # env.render()
+
+if save_best:
+    env.save_best_brain(max_epi)
 
 while True:
     actions = []

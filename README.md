@@ -146,6 +146,26 @@ issues with the implementation itself. Therefore, it is not recommeded to use it
 <a name="todo"/></a>
 ## 5. To do
 
+### Major
+When creating a new entity, the best agents brain is chosen. The problem with that is that the
+best agent could be by accident and therefore it is difficult to keep training. 
+
+Methods:
+* Choose the most recent brain that died
+* Choose the best brain from the last X episodes
+* Choose one brain that is currently in play
+* Choose between the top 5 brains
+
+### Minor
+* Communicate the actions of kin within fov to each other
+* Strangely enough, it keeps on training at a certain moment...
+* Train in google colab
+* When initiating an attack, turn border red
+* Dark entities have white eyes
+* The best agents brain is saved, but that should be the most recent brain instead...
+* When creating a new entity, simply the best agents brain is chosen.
+    * I would like to keep track of the top 5 and most recent 5 and randomly select one
+    * Maybe remove the lowest of the top 5 when adding a better one
 * Add more algorithms (PPO, SAC, Rainbow, etc.)
 * Include evolutionary traits
 * Add more behavior
@@ -153,6 +173,10 @@ issues with the implementation itself. Therefore, it is not recommeded to use it
 * Create a nicer interface for the application 
 * New entities through reproduction are put randomly on the map 
 which should be within an entities fov
+* Train on google coloboratory for (hopefully) a speed-up
+* Save brains
+* Load brains + Screensaver mode 
+* Train different type of brains together
 
 NOTE: The environment needs to be at least 7x7 otherwise it gives issues with
 the fov. 

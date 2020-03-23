@@ -1,7 +1,7 @@
 import random
 import pygame as pg
 import numpy as np
-from TheGame.Environments.utils import Entities
+from TheGame.World.utils import EntityTypes
 
 
 class Visualize:
@@ -13,11 +13,13 @@ class Visualize:
         self.grid_size = grid_size
 
         # other
-        self.entities = Entities
+        self.entities = EntityTypes
         self.colors = [(255, 255, 255), (255, 0, 0), (0, 255, 0), (0, 0, 255), (255, 255, 0), (0, 255, 255),
                        (255, 0, 255),
                        (192, 192, 192), (128, 128, 128), (128, 0, 0), (128, 128, 0), (0, 128, 0), (128, 0, 128),
                        (0, 128, 128), (0, 0, 128)]
+
+        self.colors = [tuple(generate_random_pastel()) for _ in range(100)]
 
         # Pygame related vars
         self.background = None
@@ -32,7 +34,7 @@ class Visualize:
             pg.init()
             self.screen = pg.display.set_mode((round(self.width) * self.grid_size, round(self.height) * self.grid_size))
             self.clock = pg.time.Clock()
-            self.clock.tick(50)
+            self.clock.tick(fps)
 
             # Background
             self.background = pg.Surface((round(self.width) * self.grid_size, round(self.height) * self.grid_size))
@@ -59,44 +61,48 @@ class Visualize:
 
                 # Body
                 pg.draw.rect(self.screen, color,
-                             ((agent.x * self.grid_size) + max(1, int(self.grid_size / 8)),
-                              (agent.y * self.grid_size) + max(1, int(self.grid_size / 8)),
+                             ((agent.j * self.grid_size) + max(1, int(self.grid_size / 8)),
+                              (agent.i * self.grid_size) + max(1, int(self.grid_size / 8)),
                               self.grid_size - max(1, int(self.grid_size / 8) * 2),
                               self.grid_size - max(1, int(self.grid_size / 8)) * 2), 0)
-
-                pg.draw.rect(self.screen, (0, 0, 0),
-                             ((agent.x * self.grid_size) + max(1, int(self.grid_size / 8)),
-                              (agent.y * self.grid_size) + max(1, int(self.grid_size / 8)),
+                if agent.action > 3:
+                    border_color = (255, 0, 0)
+                else:
+                    border_color = (0, 0, 0)
+                pg.draw.rect(self.screen, border_color,
+                             ((agent.j * self.grid_size) + max(1, int(self.grid_size / 8)),
+                              (agent.i * self.grid_size) + max(1, int(self.grid_size / 8)),
                               self.grid_size - max(1, int(self.grid_size / 8) * 2),
                               self.grid_size - max(1, int(self.grid_size / 8)) * 2), 2)
 
                 # Eyes
                 pg.draw.rect(self.screen, (0, 0, 0),
-                             ((agent.x * self.grid_size) + max(1, int(self.grid_size / 3)),
-                              (agent.y * self.grid_size) + max(1, int(self.grid_size / 3)),
+                             ((agent.j * self.grid_size) + max(1, int(self.grid_size / 3)),
+                              (agent.i * self.grid_size) + max(1, int(self.grid_size / 3)),
                               self.grid_size - max(1, int(self.grid_size * .9)),
                               self.grid_size - max(1, int(self.grid_size * .9))), 0)
 
                 pg.draw.rect(self.screen, (0, 0, 0),
-                             ((agent.x * self.grid_size) + max(1, int(self.grid_size / 1.8)),
-                              (agent.y * self.grid_size) + max(1, int(self.grid_size / 3)),
+                             ((agent.j * self.grid_size) + max(1, int(self.grid_size / 1.8)),
+                              (agent.i * self.grid_size) + max(1, int(self.grid_size / 3)),
                               self.grid_size - max(1, int(self.grid_size * .9)),
                               self.grid_size - max(1, int(self.grid_size * .9))), 0)
 
     def _draw_food(self, grid):
-        food = np.where(grid == self.entities.food)
-        for i, j in zip(food[0], food[1]):
-            pg.draw.rect(self.screen, (255, 255, 255), ((i * self.grid_size) + int(self.grid_size/2.5),
-                                                        (j * self.grid_size) + int(self.grid_size/2.5),
+        food = grid.get_entities(self.entities.food)
+        for item in food:
+            pg.draw.rect(self.screen, (255, 255, 255), ((item.j * self.grid_size) + int(self.grid_size/2.5),
+                                                        (item.i * self.grid_size) + int(self.grid_size/2.5),
                                                         self.grid_size - int(self.grid_size/2.5)*2,
                                                         self.grid_size - int(self.grid_size/2.5)*2), 0)
 
-        food = np.where(grid == self.entities.poison)
-        for i, j in zip(food[0], food[1]):
-            pg.draw.rect(self.screen, (0, 0, 0), ((i * self.grid_size) + int(self.grid_size/2.5),
-                                                  (j * self.grid_size) + int(self.grid_size/2.5),
+        poison = grid.get_entities(self.entities.poison)
+        for item in poison:
+            pg.draw.rect(self.screen, (0, 0, 0), ((item.j * self.grid_size) + int(self.grid_size/2.5),
+                                                  (item.i * self.grid_size) + int(self.grid_size/2.5),
                                                   self.grid_size - int(self.grid_size/2.5)*2,
                                                   self.grid_size - int(self.grid_size/2.5)*2), 0)
+
 
     def _get_tile_colors(self):
         self.tile_colors = {i: {j: None} for i in range(self.width) for j in range(self.height)}
@@ -152,3 +158,15 @@ def check_pygame_exit():
             pg.quit()
             return False
     return True
+
+
+def generate_random_pastel():
+    red = random.randint(0, 255)
+    green = random.randint(0, 255)
+    blue = random.randint(0, 255)
+
+    red = (red + 255) / 2
+    blue = (blue + 255) / 2
+    green = (green + 255) / 2
+
+    return red, green, blue
