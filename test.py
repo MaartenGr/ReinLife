@@ -1,17 +1,28 @@
 import matplotlib.pyplot as plt
-import numpy as np
 
-x = np.linspace(0, 6*np.pi, 100)
-y = np.sin(x)
+plt.figure(figsize=(5*5, 5))
+x = range(10)
+y = range(10,20,1)
 
-# # You probably won't need this if you're embedding things in a tkinter plot...
-plt.ion()
+a1 = plt.subplot(151)
+a1.plot(y,x)
+a1.set_aspect('equal')
 
-fig = plt.figure()
-ax = fig.add_subplot(111)
-line1, = ax.plot(x, y, 'r-') # Returns a tuple of line objects, thus the comma
+a2 = plt.subplot(152)
+a2.plot(x,y)
+a2.set_aspect('equal')
 
-for phase in np.linspace(0, 10*np.pi, 500):
-    line1.set_ydata(np.sin(x + phase))
-    fig.canvas.draw()
-    fig.canvas.flush_events()
+a3 = plt.subplot(153)
+a3.plot(x,y)
+a3.set_aspect('equal')
+
+a4 = plt.subplot(154)
+a4.plot(x,y)
+a4.set_aspect('equal')
+
+a5 = plt.subplot(155)
+x = range(20)
+y = range(20,40,1)
+a5.plot(x,y)
+a5.set_aspect('equal')
+plt.show()

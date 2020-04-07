@@ -1,11 +1,11 @@
 import random
-import pygame as pg
 import numpy as np
+import pygame as pg
 from TheGame.World.utils import EntityTypes
 
 
 class Visualize:
-    def __init__(self, width, height, grid_size):
+    def __init__(self, width, height, grid_size, pastel=False):
 
         # Track size
         self.width = width
@@ -14,12 +14,14 @@ class Visualize:
 
         # other
         self.entities = EntityTypes
-        self.colors = [(255, 255, 255), (255, 0, 0), (0, 255, 0), (0, 0, 255), (255, 255, 0), (0, 255, 255),
-                       (255, 0, 255),
-                       (192, 192, 192), (128, 128, 128), (128, 0, 0), (128, 128, 0), (0, 128, 0), (128, 0, 128),
-                       (0, 128, 128), (0, 0, 128)]
 
-        self.colors = [tuple(generate_random_pastel()) for _ in range(100)]
+        if pastel:
+            self.colors = [tuple(generate_random_pastel()) for _ in range(100)]
+        else:
+            self.colors = [(255, 255, 255), (255, 0, 0), (0, 255, 0), (0, 0, 255), (255, 255, 0), (0, 255, 255),
+                           (255, 0, 255),
+                           (192, 192, 192), (128, 128, 128), (128, 0, 0), (128, 128, 0), (0, 128, 0), (128, 0, 128),
+                           (0, 128, 128), (0, 0, 128)]
 
         # Pygame related vars
         self.background = None
@@ -65,10 +67,12 @@ class Visualize:
                               (agent.i * self.grid_size) + max(1, int(self.grid_size / 8)),
                               self.grid_size - max(1, int(self.grid_size / 8) * 2),
                               self.grid_size - max(1, int(self.grid_size / 8)) * 2), 0)
-                if agent.action > 3:
+                if agent.killed == 1:
                     border_color = (255, 0, 0)
                 else:
-                    border_color = (0, 0, 0)
+                    health_multiplier = agent.health / 200
+                    border_color = lerp(np.array(color), np.array([0, 0, 0]), health_multiplier)
+
                 pg.draw.rect(self.screen, border_color,
                              ((agent.j * self.grid_size) + max(1, int(self.grid_size / 8)),
                               (agent.i * self.grid_size) + max(1, int(self.grid_size / 8)),
@@ -170,3 +174,7 @@ def generate_random_pastel():
     green = (green + 255) / 2
 
     return red, green, blue
+
+
+def lerp(a, b, t):
+    return a*(1 - t) + b*t

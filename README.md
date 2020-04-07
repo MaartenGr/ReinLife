@@ -157,6 +157,7 @@ Methods:
 * Choose between the top 5 brains
 
 ### Minor
+* Update fitness from sum of health to sum of age
 * Communicate the actions of kin within fov to each other
 * Strangely enough, it keeps on training at a certain moment...
 * Train in google colab

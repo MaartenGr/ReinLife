@@ -1,6 +1,7 @@
 import numpy as np
 from TheGame.World.Entities import Empty
 from TheGame.World.utils import EntityTypes
+from copy import deepcopy
 
 
 class Grid:
@@ -23,7 +24,6 @@ class Grid:
                 self.grid[i, j] = Empty((i, j), value=self.entity_type.empty)
 
     def copy(self):
-        from copy import deepcopy
         return deepcopy(self)
 
     def set(self, i, j, entity, **kwargs):

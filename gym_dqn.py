@@ -18,8 +18,8 @@
 import torch.optim as optim
 import torch
 
-from Field.dqn import ReplayBuffer, Qnet, train
-from Field import GridWorld
+from TheGame.Models.dqn import ReplayBuffer, Qnet, train
+from TheGame import Environment
 
 #Hyperparameters
 learning_rate = 0.0005
@@ -27,11 +27,11 @@ gamma = 0.98
 buffer_limit = 50000
 batch_size = 32
 
-env = GridWorld(width=10, height=10, nr_agents=1)
+env = Environment(width=10, height=10, nr_agents=1)
 env.max_step = 30
 
-agents = [Qnet(151) for _ in range(1)]
-agents_targets = [Qnet(151) for _ in range(len(agents))]
+agents = [Qnet(152) for _ in range(1)]
+agents_targets = [Qnet(152) for _ in range(len(agents))]
 
 for index, target in enumerate(agents_targets):
     target.load_state_dict(agents[index].state_dict())
@@ -42,7 +42,7 @@ optimizers = [optim.Adam(agents[index].parameters(), lr=learning_rate) for index
 print_interval = 10
 scores = [0.0 for _ in range(len(agents))]
 
-for n_epi in range(200):
+for n_epi in range(500):
 
     # Initialize Variables
     epsilon = max(0.01, 0.08 - 0.08 * (n_epi / 500))  # Linear annealing from 8% to 1%

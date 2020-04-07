@@ -16,7 +16,7 @@ class Entity:
 
 class Agent:
     """ An Agent with several trackers and movement options """
-    def __init__(self, coordinates, value, brain=None, gen=None):
+    def __init__(self, coordinates, value, brain=None, gen=None, genome=None, config=None):
         self.i, self.j = coordinates
         self.health = 200
         self.value = value
@@ -25,6 +25,7 @@ class Agent:
         self.dead = False
         self.done = False
         self.age = 0
+        self.max_age = 50
         self.brain = brain
         self.i_target = None
         self.j_target = None
@@ -32,6 +33,14 @@ class Agent:
         self.gen = gen
         self.fitness = 0
         self.action = -1
+        self.killed = 0
+
+        # NEAT
+        self.genome = genome
+
+        if self.genome:
+            self.genome.fitness = 0
+            self.config = config
 
     def move(self):
         self.i = self.i_target

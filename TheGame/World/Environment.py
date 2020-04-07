@@ -17,7 +17,7 @@ from TheGame.World.Render import Visualize
 
 class Environment(gym.Env):
     def __init__(self, width=30, height=30, nr_agents=10, evolution=False, fps=60, brains=None,
-                 grid_size=16, max_agents=10):
+                 grid_size=16, max_agents=10, pastel=False, extended_fov=False):
 
         # Classes
         self.actions = Actions
@@ -27,6 +27,7 @@ class Environment(gym.Env):
         self.width = width
         self.height = height
         self.grid = None
+        self.previous_grid = None
         self.grid_size = grid_size
 
         # Trackers
@@ -37,6 +38,8 @@ class Environment(gym.Env):
         self.max_gen = nr_agents
         self.evolution = evolution
         self.fps = fps
+        self.pastel = pastel
+        self.extended_fov = extended_fov
 
         if not brains:
             self.brains = [None for _ in range(nr_agents)]
@@ -57,12 +60,15 @@ class Environment(gym.Env):
                                             dtype=np.float)
 
         # Render
-        self.viz = Visualize(self.width, self.height, self.grid_size)
+        self.viz = Visualize(self.width, self.height, self.grid_size, self.pastel)
 
     def reset(self, is_render=False):
         """ Reset the environment to the beginning """
         self.current_step = 0
         self.grid = Grid(self.width, self.height)
+
+        if self.extended_fov:
+            self.previous_grid = self.grid.copy()
 
         # Add agents
         self.agents = []
@@ -77,7 +83,7 @@ class Environment(gym.Env):
 
         # Add Bad Food
         for i in range(self.width * self.height):
-            if np.random.random() < 0.1:
+            if np.random.random() < 0.05:
                 self.grid.set_random(Entity, p=1, value=self.entities.poison)
 
         obs, _ = self._get_obs()
@@ -85,6 +91,8 @@ class Environment(gym.Env):
 
     def step(self, actions):
         """ move a single step """
+        if self.extended_fov:
+            self.previous_grid = self.grid.copy()
         self.current_step += 1
         self._act(actions)
         rewards, dones, infos = self._get_rewards()
@@ -96,7 +104,7 @@ class Environment(gym.Env):
                     self.grid.set_random(Entity, p=1, value=self.entities.food)
 
         # Add poison
-        if len(np.where(self.grid.get_numpy() == self.entities.poison)[0]) <= 20:
+        if len(np.where(self.grid.get_numpy() == self.entities.poison)[0]) <= ((self.width * self.height) / 20):
             for i in range(3):
                 if np.random.random() < 0.2:
                     self.grid.set_random(Entity, p=1, value=self.entities.poison)
@@ -143,6 +151,16 @@ class Environment(gym.Env):
             torch.save(best_agent.brain.model.state_dict(), f"Brains/{best_agent.brain.method}/"
                                                     f"model_{n_epi}_{index}.pt")
 
+        elif best_agent.brain.method == "DRQN":
+            import torch
+            torch.save(best_agent.brain.eval_net.state_dict(), f"Brains/{best_agent.brain.method}/"
+                                                    f"model_{n_epi}_{index}.pt")
+
+        elif best_agent.brain.method == "PPO":
+            import torch
+            torch.save(best_agent.brain.agent.state_dict(), f"Brains/{best_agent.brain.method}/"
+                                                    f"model_{n_epi}_{index}.pt")
+
     def _get_rewards(self):
         """ Extract reward and whether the game has finished """
         rewards = [0 for _ in range(len(self.agents))]
@@ -155,15 +173,19 @@ class Environment(gym.Env):
             done = False
 
             if not agent.dead:
-                if agent.health <= 0:
+                if agent.health <= 0 or agent.age == agent.max_age:
                     agent.dead = True
-                    reward = -400
+                    reward = -400  # 1 Works, but is unstable
+                    reward = -1 * self.max_agents
                     done = True
                     info = "Dead"
                 elif self.evolution:
-                    # reward = 5
-                    # reward = 5 + (5 * sum([1 for other_agent in self.agents if agent.gen == other_agent.gen]))
-                    reward = sum([other_agent.health / 200 for other_agent in self.agents if agent.gen == other_agent.gen])
+                    # reward = sum([other_agent.health / 200 for other_agent in self.agents
+                    #               if agent.gen == other_agent.gen])
+                    # reward = sum([other_agent.age / 200 for other_agent in self.agents
+                    #               if agent.gen == other_agent.gen])
+                    reward = (sum([1 for other_agent in self.agents
+                                  if agent.gen == other_agent.gen]) - 1) / self.max_agents
                 elif self.current_step >= self.max_step:
                     done = True
                     reward = 400
@@ -183,9 +205,10 @@ class Environment(gym.Env):
         """ Make the agents act and reduce its health with each step """
         self.agents = self.grid.get_entities(self.entities.agent)
         for agent, action in zip(self.agents, actions):
-            agent.health -= 10
-            agent.age += 1
+            agent.health = min(200, agent.health - 10)
+            agent.age = min(agent.max_age, agent.age + 1)
             agent.action = action
+            agent.killed = 0
 
         self._attack(actions)  # To do: first attack, then move!
         self._prepare_movement(actions)
@@ -230,6 +253,16 @@ class Environment(gym.Env):
         observations = []
 
         for agent in self.agents:
+
+            # Additional observations
+            if self.extended_fov:
+                previous_observation = self.previous_grid.fov(agent.i, agent.j, 3)
+
+                # Previous Family
+                vectorize = np.vectorize(lambda obj: self._get_family(obj, agent))
+                previous_family_obs = list(vectorize(previous_observation).flatten())
+
+            # Main observations
             observation = self.grid.fov(agent.i, agent.j, 3)
 
             # Food
@@ -241,7 +274,7 @@ class Environment(gym.Env):
             family_obs = list(vectorize(observation).flatten())
 
             # health
-            vectorize = np.vectorize(lambda obj: obj.health / 200 if obj.value == self.entities.agent else 0)
+            vectorize = np.vectorize(lambda obj: obj.health / 200 if obj.value == self.entities.agent else -1)
             health_obs = list(vectorize(observation).flatten())
 
             nr_genes = sum([1 for other_agent in self.agents if agent.gen == other_agent.gen])
@@ -250,8 +283,11 @@ class Environment(gym.Env):
             if agent.reproduced:
                 reproduced = 1
 
-            fov = np.array(fov_food + family_obs + health_obs + [agent.health/200] +
-                           [agent.i/self.width] + [agent.j/self.height] + [reproduced] + [nr_genes])
+            if self.extended_fov:
+                fov = np.array(fov_food + family_obs + previous_family_obs + health_obs + [agent.health/200] +
+                               [agent.i/self.width] + [agent.j/self.height] + [reproduced] + [nr_genes])
+            else:
+                fov = np.array(fov_food + family_obs + health_obs + [agent.health / 200] + [reproduced] + [nr_genes])
 
             observations.append(fov)
 
@@ -378,47 +414,67 @@ class Environment(gym.Env):
     def _attack(self, actions):
         """ Attack and decrease health if target is hit """
         for agent, action in zip(self.agents, actions):
+            target_i = None
+            target_j = None
+            target_agent = None
+
             if not agent.dead:
 
                 if action == self.actions.attack_up:
                     if agent.i == 0:
                         if self.grid.grid[self.height - 1, agent.j].value == self.entities.agent:
-                            self.grid.grid[self.height - 1, agent.j].health -= 50
+                            target_agent = self.grid.grid[self.height - 1, agent.j]
                     else:
                         if self.grid.grid[agent.i - 1, agent.j].value == self.entities.agent:
-                            self.grid.grid[agent.i - 1, agent.j].health -= 50
+                            target_agent = self.grid.grid[agent.i - 1, agent.j]
 
                 elif action == self.actions.attack_right:
                     if agent.j == (self.width - 1):
                         if self.grid.grid[agent.i, 0].value == self.entities.agent:
-                            self.grid.grid[agent.i, 0].health -= 50
+                            target_agent = self.grid.grid[agent.i, 0]
                     else:
                         if self.grid.grid[agent.i, agent.j + 1].value == self.entities.agent:
-                            self.grid.grid[agent.i, agent.j + 1].health -= 50
+                            target_agent = self.grid.grid[agent.i, agent.j + 1]
 
                 elif action == self.actions.attack_right:
                     if agent.j == (self.width - 1):
                         if self.grid.grid[agent.i, 0].value == self.entities.agent:
-                            self.grid.grid[agent.i, 0].health -= 50
+                            target_agent = self.grid.grid[agent.i, 0]
                     else:
                         if self.grid.grid[agent.i, agent.j + 1].value == self.entities.agent:
-                            self.grid.grid[agent.i, agent.j + 1].health -= 50
+                            target_agent = self.grid.grid[agent.i, agent.j + 1]
 
                 elif action == self.actions.attack_down:
                     if agent.i == (self.height - 1):
                         if self.grid.grid[0, agent.j].value == self.entities.agent:
-                            self.grid.grid[0, agent.j].health -= 50
+                            target_agent = self.grid.grid[0, agent.j]
                     else:
                         if self.grid.grid[agent.i + 1, agent.j].value == self.entities.agent:
-                            self.grid.grid[agent.i + 1, agent.j].health -= 50
+                            target_agent = self.grid.grid[agent.i + 1, agent.j]
 
                 elif action == self.actions.attack_left:
                     if agent.j == 0:
                         if self.grid.grid[agent.i, self.width - 1].value == self.entities.agent:
-                            self.grid.grid[agent.i, self.width - 1].health -= 50
+                            target_agent = self.grid.grid[agent.i, self.width - 1]
                     else:
                         if self.grid.grid[agent.i, agent.j - 1].value == self.entities.agent:
-                            self.grid.grid[agent.i, agent.j - 1].health -= 50
+                            target_agent = self.grid.grid[agent.i, agent.j - 1]
+
+                # Execute attack
+                if target_agent:
+                    # target_agent.health = max(0, target_agent.health - 50)
+                    # if target_agent.health <= 0:
+                    #     agent.health = min(200, agent.health + 50)
+                    # target_agent.health = 0
+                    # agent.health = min(200, agent.health + 50)
+                    # agent.killed = 1
+
+                    if target_agent.health > agent.health:
+                        agent.health = 0
+                    elif agent.health > target_agent.health:
+                        target_agent.health = 0
+                        agent.health = min(200, agent.health + 50)
+                        agent.killed = 1
 
     def _eat(self, agent):
         """ Eat food """
@@ -426,7 +482,7 @@ class Environment(gym.Env):
         if self.grid.grid[agent.i_target, agent.j_target].value == self.entities.food:
             agent.health = min(200, agent.health + 40)
         elif self.grid.grid[agent.i_target, agent.j_target].value == self.entities.poison:
-            agent.health -= 40
+            agent.health = min(200, agent.health - 40)
 
     def _update_agent_position(self, agent):
         """ Update position of an agent """
@@ -450,5 +506,5 @@ class Environment(gym.Env):
         min_fitness_idx = int(np.argmin([agent.fitness for agent in self.best_agents]))
         min_fitness = self.best_agents[min_fitness_idx].fitness
         for agent in self.agents:
-            if agent.fitness > min_fitness:
+            if agent.fitness > min_fitness and agent not in self.best_agents:
                 self.best_agents[min_fitness_idx] = agent

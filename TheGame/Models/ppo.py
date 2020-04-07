@@ -1,5 +1,3 @@
-
-import gym
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -7,34 +5,69 @@ import torch.optim as optim
 from torch.distributions import Categorical
 
 # Hyperparameters
-learning_rate = 0.0005
-gamma = 0.98
-lmbda = 0.95
-eps_clip = 0.1
-K_epoch = 3
-T_horizon = 20
+# learning_rate = 0.0005
+# gamma = 0.98
+# lmbda = 0.95
+# eps_clip = 0.1
+# K_epoch = 3
+
+
+class PPOAgent:
+    def __init__(self, input_dim, output_dim, learning_rate=0.0005, gamma=0.98, lmbda=0.95,
+                 eps_clip=0.1, k_epoch=3, load_model=False):
+        self.agent = PPO(input_dim, output_dim, learning_rate, gamma, lmbda,eps_clip, k_epoch)
+        self.method = "PPO"
+        self.load_model = load_model
+
+        if self.load_model:
+            self.agent.load_state_dict(torch.load(load_model))
+            self.agent.eval()
+
+    def get_action(self, s):
+        action, prob = self.agent.get_action(s)
+
+        if self.load_model:
+            return action
+        else:
+            return action, prob
+
+    def learn(self):
+        self.agent.learn()
+
+    def put_data(self, transition):
+        self.agent.put_data(transition)
+
+    def data(self):
+        return self.agent.data
 
 
 class PPO(nn.Module):
-    def __init__(self):
+    def __init__(self, input_dim, output_dim, learning_rate, gamma, lmbda, eps_clip, k_epoch):
         super(PPO, self).__init__()
         self.data = []
+        self.learning_rate = learning_rate
+        self.gamma = gamma
+        self.lmbda = lmbda
+        self.eps_clip = eps_clip
+        self.k_epoch = k_epoch
 
-        self.fc1 = nn.Linear(152, 256)
-        self.fc_pi = nn.Linear(256, 8)
+        self.fc1 = nn.Linear(input_dim, 256)
+        # self.fc2 = nn.Linear(256, 256)
+        self.fc_pi = nn.Linear(256, output_dim)
         self.fc_v = nn.Linear(256, 1)
         self.optimizer = optim.Adam(self.parameters(), lr=learning_rate)
 
-        self.method = "PPO"
-
     def pi(self, x, softmax_dim=0):
         x = F.relu(self.fc1(x))
+        # x = F.relu(self.fc2(x))
         x = self.fc_pi(x)
         prob = F.softmax(x, dim=softmax_dim)
         return prob
 
     def v(self, x):
         x = F.relu(self.fc1(x))
+        # x = F.relu(self.fc2(x))
+        # x = F.relu(self.fc3(x))
         v = self.fc_v(x)
         return v
 
@@ -60,18 +93,18 @@ class PPO(nn.Module):
         self.data = []
         return s, a, r, s_prime, done_mask, prob_a
 
-    def train(self):
+    def learn(self):
         s, a, r, s_prime, done_mask, prob_a = self.make_batch()
 
-        for i in range(K_epoch):
-            td_target = r + gamma * self.v(s_prime) * done_mask
+        for i in range(self.k_epoch):
+            td_target = r + self.gamma * self.v(s_prime) * done_mask
             delta = td_target - self.v(s)
             delta = delta.detach().numpy()
 
             advantage_lst = []
             advantage = 0.0
             for delta_t in delta[::-1]:
-                advantage = gamma * lmbda * advantage + delta_t[0]
+                advantage = self.gamma * self.lmbda * advantage + delta_t[0]
                 advantage_lst.append([advantage])
             advantage_lst.reverse()
             advantage = torch.tensor(advantage_lst, dtype=torch.float)
@@ -81,7 +114,7 @@ class PPO(nn.Module):
             ratio = torch.exp(torch.log(pi_a) - torch.log(prob_a))  # a/b == exp(log(a)-log(b))
 
             surr1 = ratio * advantage
-            surr2 = torch.clamp(ratio, 1 - eps_clip, 1 + eps_clip) * advantage
+            surr2 = torch.clamp(ratio, 1 - self.eps_clip, 1 + self.eps_clip) * advantage
             loss = -torch.min(surr1, surr2) + F.smooth_l1_loss(self.v(s), td_target.detach())
 
             self.optimizer.zero_grad()

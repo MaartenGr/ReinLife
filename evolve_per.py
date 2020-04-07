@@ -4,11 +4,12 @@ from TheGame.utils import Results
 
 # Hyperparameters
 save_best = True
-max_epi = 20_000
-track_results = Results(print_interval=100, interactive=False)
+max_epi = 6_000
+track_results = Results(print_interval=100, interactive=True)
 
 # Init env
-env = Environment(width=20, height=20, nr_agents=1, evolution=True, fps=20, brains=[DQNAgent(152, 8)], grid_size=24)
+env = Environment(width=60, height=30, nr_agents=1, max_agents=100,
+                  evolution=True, fps=20, brains=[DQNAgent(152, 8)], grid_size=24)
 s = env.reset()
 
 for n_epi in range(max_epi):
@@ -26,7 +27,7 @@ for n_epi in range(max_epi):
         if agent.age % 20 == 0 or agent.dead:
             agent.brain.update_target_model()
 
-    track_results.update_results(env.agents, n_epi)
+    track_results.update_results(env.agents, n_epi, actions, r)
     s = env.update_env()
 
     # env.render()

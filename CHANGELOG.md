@@ -8,7 +8,35 @@ follows the following style:
 - Removed
 
 
-## [0.2.3] - 2020-XX-XX
+## [0.2.4] - 2020-04-07
+
+### Added
+- Added DRQN
+- Added additional live visualizations
+- Visualizations for Google Colab
+- Option to choose for pastel colors in Render
+- Option to choose an extended fov for testing purposes
+- Option for PPO to select input_dim and output_dim
+
+### Changed
+- General structure and lay-out of main code
+- Implemented a maximum age, after which the entity dies
+- Attacks, if fatal, now also result in increased health
+- If no agent, then health_fov is -1 instead of zero to better identify empty spaces
+- Show a decrease in health by the black border slowly going towards the color of its body
+- Updated fitness function: 
+    -  reward = sum([other_agent.age / 200 for other_agent in self.agents
+                     if agent.gen == other_agent.gen])
+    -  reward = (sum([1 for other_agent in self.agents
+                      if agent.gen == other_agent.gen]) - 1) / self.max_agents
+
+- Instant kill instead of decreasing health
+
+### Fixed
+- Of the best agents, the worst agent is replaced by a better agent only
+if it is not already one of the best agents (which was previously the case)
+
+## [0.2.3] - 2020-03-23
 
 ### Fixed
 - Rendering only worked for squares, now fixed
