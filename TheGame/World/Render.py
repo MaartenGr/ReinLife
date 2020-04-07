@@ -23,6 +23,8 @@ class Visualize:
                            (192, 192, 192), (128, 128, 128), (128, 0, 0), (128, 128, 0), (0, 128, 0), (128, 0, 128),
                            (0, 128, 128), (0, 0, 128)]
 
+        self.colors = [(255, 0, 0), (0, 255, 0), (255, 255, 0), (0, 255, 255), (255, 255, 255)]
+
         # Pygame related vars
         self.background = None
         self.clock = None
@@ -60,6 +62,8 @@ class Visualize:
                     color = self.colors[agent.gen]
                 else:
                     color = self.colors[agent.gen % len(self.colors)]
+
+                color = self.colors[agent.gen]
 
                 # Body
                 pg.draw.rect(self.screen, color,
