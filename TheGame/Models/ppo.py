@@ -52,21 +52,21 @@ class PPO(nn.Module):
         self.k_epoch = k_epoch
 
         self.fc1 = nn.Linear(input_dim, 256)
-        # self.fc2 = nn.Linear(256, 256)
+        self.fc2 = nn.Linear(256, 256)
         self.fc_pi = nn.Linear(256, output_dim)
         self.fc_v = nn.Linear(256, 1)
         self.optimizer = optim.Adam(self.parameters(), lr=learning_rate)
 
     def pi(self, x, softmax_dim=0):
         x = F.relu(self.fc1(x))
-        # x = F.relu(self.fc2(x))
+        x = F.relu(self.fc2(x))
         x = self.fc_pi(x)
         prob = F.softmax(x, dim=softmax_dim)
         return prob
 
     def v(self, x):
         x = F.relu(self.fc1(x))
-        # x = F.relu(self.fc2(x))
+        x = F.relu(self.fc2(x))
         # x = F.relu(self.fc3(x))
         v = self.fc_v(x)
         return v
