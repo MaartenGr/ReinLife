@@ -73,7 +73,7 @@ class Environment(gym.Env):
         # Add agents
         self.agents = []
         for i in range(self.nr_agents):
-            self._add_agent(random_loc=True, brain=self.brains[i], gen=i+1)
+            self._add_agent(random_loc=True, brain=self.brains[i], gen=i)
         self.best_agents = [self.grid.get_entities(self.entities.agent)[0] for _ in range(5)]
 
         # Add Good Food
@@ -110,7 +110,7 @@ class Environment(gym.Env):
                     self.grid.set_random(Entity, p=1, value=self.entities.poison)
 
         obs, _ = self._get_obs()
-        self._update_best_agents()
+        # self._update_best_agents()
 
         return obs, rewards, dones, infos
 
@@ -226,7 +226,7 @@ class Environment(gym.Env):
         for agent in self.agents:
             if not agent.dead and not agent.reproduced:
                 if len(self.agents) <= self.max_agents and random.random() > 0.95 and agent.age > 5:
-                    new_brain = copy.copy(agent.brain)
+                    new_brain = self.brains[agent.gen]
                     coordinates = self._get_empty_within_fov(agent)
                     if coordinates:
                         self._add_agent(coordinates=coordinates[random.randint(0, len(coordinates)-1)],
@@ -237,9 +237,9 @@ class Environment(gym.Env):
     def _produce(self):
         """ Randomly produce new agent if too little agents are alive """
         if len(self.agents) <= self.max_agents + 1 and random.random() > 0.95:
-            self.max_gen += 1
-            new_brain = copy.copy(random.choice(self.best_agents).brain)
-            self._add_agent(random_loc=True, brain=new_brain, gen=self.max_gen)
+            gen = random.choice([x for x in range(self.nr_agents)])
+            brain = self.brains[gen]
+            self._add_agent(random_loc=True, brain=brain, gen=gen)
 
     def _remove_dead_agents(self):
         """ Remove dead agent from grid """
