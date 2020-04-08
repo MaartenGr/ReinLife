@@ -23,7 +23,7 @@ class Agent:
         self.coordinates = list(coordinates)
         self.target_coordinates = list(coordinates)
         self.dead = False
-        self.done = False
+
         self.age = 0
         self.max_age = 50
         self.brain = brain
@@ -32,15 +32,17 @@ class Agent:
         self.reproduced = False
         self.gen = gen
         self.fitness = 0
-        self.action = -1
+
         self.killed = 0
 
-        # NEAT
-        self.genome = genome
+        self.state = None
+        self.state_prime = None
+        self.reward = None
+        self.action = -1
+        self.prob = None
+        self.done = False
+        self.info = None
 
-        if self.genome:
-            self.genome.fitness = 0
-            self.config = config
 
     def move(self):
         self.i = self.i_target
