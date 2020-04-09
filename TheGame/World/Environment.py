@@ -200,6 +200,9 @@ class Environment(gym.Env):
                 done = True
                 reward = 400
 
+            if agent.killed:
+                reward += 0.2
+
             agent.fitness += reward
             agent.reward = reward
             agent.done = done
@@ -297,7 +300,7 @@ class Environment(gym.Env):
                                [agent.i / self.width] + [agent.j / self.height] + [reproduced] + [nr_genes])
             else:
                 fov = np.array(fov_food + family_obs + health_obs + [agent.health / 200] + [reproduced] + [nr_genes]
-                               + [len(self.agents)])
+                               + [len(self.agents)] + [agent.killed])
 
             if agent.age == 0:
                 agent.state = fov
@@ -475,19 +478,9 @@ class Environment(gym.Env):
 
                 # Execute attack
                 if target_agent:
-                    # target_agent.health = max(0, target_agent.health - 50)
-                    # if target_agent.health <= 0:
-                    #     agent.health = min(200, agent.health + 50)
-                    # target_agent.health = 0
-                    # agent.health = min(200, agent.health + 50)
-                    # agent.killed = 1
-
-                    if target_agent.health > agent.health:
-                        agent.health = 0
-                    elif agent.health > target_agent.health:
-                        target_agent.health = 0
-                        agent.health = min(200, agent.health + 50)
-                        agent.killed = 1
+                    target_agent.health = 0
+                    agent.health = min(200, agent.health + 100)
+                    agent.killed = 1
 
     def _eat(self, agent):
         """ Eat food """
