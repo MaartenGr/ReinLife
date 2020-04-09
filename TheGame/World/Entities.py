@@ -35,6 +35,12 @@ class Agent:
         self.action = -1
         self.killed = 0
 
+        self.reward = None
+        self.state = None
+        self.state_prime = None
+        self.info = None
+        self.prob = None
+
         # NEAT
         self.genome = genome
 
