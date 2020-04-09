@@ -8,7 +8,7 @@ save_best = True
 track_results = Results(print_interval=100, interactive=True)
 
 # Init env
-env = Environment(width=30, height=30, nr_agents=2, evolution=True, brains=[A2CAgent(151, 8) for _ in range(2)], grid_size=24,
+env = Environment(width=60, height=30, nr_agents=1, evolution=True, brains=[A2CAgent(152, 8)], grid_size=24,
                   max_agents=50)
 s = env.reset()
 
@@ -17,8 +17,7 @@ for n_epi in range(max_epi):
     s_prime, r, dones, infos = env.step(actions)
 
     for i, agent in enumerate(env.agents):
-        if agent.dead or agent.age % 20 == 0:
-            agent.brain.train_model(s[i], actions[i], r[i], s_prime[i], dones[i])
+        agent.brain.train_model(s[i], actions[i], r[i], s_prime[i], dones[i])
 
     track_results.update_results(env.agents, n_epi, actions, r)
     s = env.update_env()
