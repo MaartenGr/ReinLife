@@ -58,10 +58,10 @@ class Visualize:
     def _draw_agents(self, agents):
         for agent in agents:
             if not agent.dead:
-                if agent.gen < len(self.colors):
-                    color = self.colors[agent.gen]
-                else:
-                    color = self.colors[agent.gen % len(self.colors)]
+                # if agent.gen < len(self.colors):
+                #     color = self.colors[agent.gen]
+                # else:
+                #     color = self.colors[agent.gen % len(self.colors)]
 
                 color = self.colors[agent.gen]
 
@@ -74,8 +74,9 @@ class Visualize:
                 if agent.killed == 1:
                     border_color = (255, 0, 0)
                 else:
-                    health_multiplier = agent.health / 200
+                    health_multiplier = agent.health / 205
                     border_color = lerp(np.array(color), np.array([0, 0, 0]), health_multiplier)
+
 
                 pg.draw.rect(self.screen, border_color,
                              ((agent.j * self.grid_size) + max(1, int(self.grid_size / 8)),

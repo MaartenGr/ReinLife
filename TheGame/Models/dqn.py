@@ -73,8 +73,8 @@ class ReplayBuffer():
 class Qnet(nn.Module):
     def __init__(self, input_dim):
         super(Qnet, self).__init__()
-        self.fc1 = nn.Linear(input_dim, 64)
-        self.fc2 = nn.Linear(64, 64)
+        self.fc1 = nn.Linear(input_dim, 128)
+        self.fc2 = nn.Linear(128, 64)
         self.fc3 = nn.Linear(64, 8)
 
     def forward(self, x):
@@ -88,7 +88,7 @@ class Qnet(nn.Module):
         out = self.forward(obs)
         coin = random.random()
         if coin < epsilon:
-            return random.randint(0, 1)
+            return random.randint(0, 7)
         else:
             return out.argmax().item()
 

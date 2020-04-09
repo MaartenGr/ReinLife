@@ -7,7 +7,7 @@ max_epi = 65_000
 save_best = True
 track_results = Results(print_interval=500, interactive=True, google_colab=False)
 env = Environment(width=30, height=30, max_agents=50, nr_agents=2, evolution=True, fps=20,
-                  brains=[PPOAgent(150, 8, learning_rate=0.0001) for _ in range(2)], grid_size=24)
+                  brains=[PPOAgent(151, 8, learning_rate=0.0001) for _ in range(2)], grid_size=24)
 s = env.reset()
 
 for n_epi in range(max_epi):

@@ -143,26 +143,26 @@ class Environment(gym.Env):
 
         if best_agent.brain.method == "A2C":
             best_agent.brain.actor.save_weights(f"Brains/{best_agent.brain.method}/"
-                                                     f"model_{n_epi}_{index}.h5")
+                                                f"model_{n_epi}_{index}.h5")
 
         elif best_agent.brain.method == "DQN":
             import torch
             torch.save(best_agent.brain.agent.state_dict(), f"Brains/{best_agent.brain.method}/"
-                                                    f"model_{n_epi}_{index}.pt")
+            f"model_{n_epi}_{index}.pt")
         elif best_agent.brain.method == "PERDQN":
             import torch
             torch.save(best_agent.brain.model.state_dict(), f"Brains/{best_agent.brain.method}/"
-                                                    f"model_{n_epi}_{index}.pt")
+            f"model_{n_epi}_{index}.pt")
 
         elif best_agent.brain.method == "DRQN":
             import torch
             torch.save(best_agent.brain.eval_net.state_dict(), f"Brains/{best_agent.brain.method}/"
-                                                    f"model_{n_epi}_{index}.pt")
+            f"model_{n_epi}_{index}.pt")
 
         elif best_agent.brain.method == "PPO":
             import torch
             torch.save(best_agent.brain.agent.state_dict(), f"Brains/{best_agent.brain.method}/"
-                                                    f"model_{n_epi}_{index}.pt")
+            f"model_{n_epi}_{index}.pt")
 
     def _get_rewards(self):
         """ Extract reward and whether the game has finished """
@@ -170,40 +170,44 @@ class Environment(gym.Env):
         dones = [False for _ in self.agents]
         infos = ["" for _ in self.agents]
 
-        for index, agent in enumerate(self.agents):
+        # Update death status for all agents
+        for agent in self.agents:
+            if agent.health <= 0 or agent.age == agent.max_age:
+                agent.dead = True
+
+        for agent in self.agents:
             reward = 0
             info = ""
             done = False
 
-            if not agent.dead:
-                if agent.health <= 0 or agent.age == agent.max_age:
-                    agent.dead = True
-                    reward = -400  # 1 Works, but is unstable
-                    reward = -1 * self.max_agents
-                    done = True
-                    info = "Dead"
-                elif self.evolution:
-                    # reward = sum([other_agent.health / 200 for other_agent in self.agents
-                    #               if agent.gen == other_agent.gen])
-                    # reward = sum([other_agent.age / 200 for other_agent in self.agents
-                    #               if agent.gen == other_agent.gen])
-                    reward = (sum([1 for other_agent in self.agents
-                                  if agent.gen == other_agent.gen]) - 1) / self.max_agents
-                elif self.current_step >= self.max_step:
-                    done = True
-                    reward = 400
+            nr_kin_alive = max(0, sum([1 for other_agent in self.agents if
+                                       not other_agent.dead and
+                                       agent.gen == other_agent.gen]) - 1)
+            alive_agents = sum([1 for other_agent in self.agents if not other_agent.dead])
 
-            else:
+            if agent.dead:
+                reward = (-1 * alive_agents) + nr_kin_alive
                 done = True
+                info = "Dead"
+
+            elif self.evolution:
+                if alive_agents == 1:
+                    reward = 0
+                else:
+                    reward = nr_kin_alive / alive_agents
+
+            elif self.current_step >= self.max_step:
+                done = True
+                reward = 400
 
             agent.fitness += reward
             agent.reward = reward
             agent.done = done
             agent.info = info
 
-            dones[index] = done
-            infos[index] = info
-            rewards[index] = reward
+            dones[0] = done
+            infos[0] = info
+            rewards[0] = reward
 
         return rewards, dones, infos
 
@@ -234,7 +238,7 @@ class Environment(gym.Env):
                     new_brain = self.brains[agent.gen]
                     coordinates = self._get_empty_within_fov(agent)
                     if coordinates:
-                        self._add_agent(coordinates=coordinates[random.randint(0, len(coordinates)-1)],
+                        self._add_agent(coordinates=coordinates[random.randint(0, len(coordinates) - 1)],
                                         brain=new_brain, gen=agent.gen)
                     else:
                         self._add_agent(random_loc=True, brain=new_brain, gen=agent.gen)
@@ -289,13 +293,14 @@ class Environment(gym.Env):
                 reproduced = 1
 
             if self.extended_fov:
-                fov = np.array(fov_food + family_obs + previous_family_obs + health_obs + [agent.health/200] +
-                               [agent.i/self.width] + [agent.j/self.height] + [reproduced] + [nr_genes])
+                fov = np.array(fov_food + family_obs + previous_family_obs + health_obs + [agent.health / 200] +
+                               [agent.i / self.width] + [agent.j / self.height] + [reproduced] + [nr_genes])
             else:
-                fov = np.array(fov_food + family_obs + health_obs + [agent.health / 200] + [reproduced] + [nr_genes])
+                fov = np.array(fov_food + family_obs + health_obs + [agent.health / 200] + [reproduced] + [nr_genes]
+                               + [len(self.agents)])
 
             if agent.age == 0:
-              agent.state = fov
+                agent.state = fov
             agent.state_prime = fov
             observations.append(fov)
 
