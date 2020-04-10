@@ -13,7 +13,7 @@ main_brains = [PPOAgent(150, 8, load_model="Brains/PPO/model_120000_300.pt"),
 #                DQNAgent(151, load_model="Brains/DQN/model_30000_101.pt")]
 
 main_brains = [DQNAgent(152, load_model="Brains/DQN/model_40000_881.pt"),
-               DQNAgent(152, load_model="Brains/DQN/model_40000_881.pt")]
+               DQNAgent(152, load_model="Brains/DQN/model_40000_881.pt")]  # <-- CURRENTLY BEST BRAIN!!!
 
 env = Environment(width=30, height=30, nr_agents=len(main_brains), grid_size=24, evolution=True, max_agents=150,
                   pastel=False, extended_fov=False, brains=main_brains)
