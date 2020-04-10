@@ -1,19 +1,19 @@
 from TheGame.Models.dqn import DQNAgent
 from TheGame import Environment
 from TheGame.utils import Results
-
+from tqdm import tqdm
 # Hyperparameters
 save_best = True
 max_epi = 10_000
 learning_rate = 0.0005
-track_results = Results(print_interval=500, interactive=True, google_colab=False)
+track_results = Results(print_interval=100, interactive=True, google_colab=False, nr_gens=2)
 
 # Initialize Env
 env = Environment(width=30, height=30, nr_agents=2, evolution=True, fps=20, max_agents=100,
-                  brains=[DQNAgent(151, learning_rate) for _ in range(2)], grid_size=24)
+                  brains=[DQNAgent(152, learning_rate) for _ in range(2)], grid_size=24)
 s = env.reset()
 
-for n_epi in range(max_epi):
+for n_epi in tqdm(range(max_epi)):
     if n_epi % 30 == 0:
         epsilon = max(0.01, 0.20 - 0.20 * (n_epi / max_epi))  # Linear annealing from 8% to 1%
 

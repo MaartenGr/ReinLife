@@ -21,10 +21,12 @@ class Grid:
     def create_grid(self):
         for li in range(self.lineNb + 1):
             liCoord = GRID_COORD_MARGIN_SIZE + li * CELL_SIZE
-            pygame.draw.line(self.surface, BLACK, (GRID_COORD_MARGIN_SIZE, liCoord), (self.surface.get_width(), liCoord))
+            pygame.draw.line(self.surface, BLACK, (GRID_COORD_MARGIN_SIZE, liCoord),
+                             (self.surface.get_width(), liCoord))
         for co in range(self.colNb + 1):
             colCoord = GRID_COORD_MARGIN_SIZE + co * CELL_SIZE
-            pygame.draw.line(self.surface, BLACK, (colCoord, GRID_COORD_MARGIN_SIZE), (colCoord,self.surface.get_height()))
+            pygame.draw.line(self.surface, BLACK, (colCoord, GRID_COORD_MARGIN_SIZE),
+                             (colCoord, self.surface.get_height()))
 
 
 def check_pygame_exit():
@@ -36,26 +38,28 @@ def check_pygame_exit():
 
 
 class Results:
-    def __init__(self, print_interval, interactive=False, save_visualization=False, google_colab=False):
+    def __init__(self, print_interval, interactive=False, save_visualization=False, google_colab=False,
+                 nr_gens=None):
 
         # Average within and between episodes
-        self.avg_population_size = []
-        self.avg_population_age = []
-        self.avg_population_fitness = []
-        self.track_avg_population_size = []
-        self.track_avg_population_age = []
-        self.track_avg_population_fitness = []
+        self.nr_gens = nr_gens
+        self.avg_population_size = {gen: [] for gen in range(nr_gens)}
+        self.avg_population_age = {gen: [] for gen in range(nr_gens)}
+        self.avg_population_fitness = {gen: [] for gen in range(nr_gens)}
+        self.track_avg_population_size = {gen: [] for gen in range(nr_gens)}
+        self.track_avg_population_age = {gen: [] for gen in range(nr_gens)}
+        self.track_avg_population_fitness = {gen: [] for gen in range(nr_gens)}
 
         # Average between episodes and max within episodes
-        self.avg_best_size = []
-        self.avg_best_age = []
-        self.avg_best_fitness = []
-        self.track_avg_best_size =[]
-        self.track_avg_best_age = []
-        self.track_avg_best_fitness = []
+        self.avg_best_size = {gen: [] for gen in range(nr_gens)}
+        self.avg_best_age = {gen: [] for gen in range(nr_gens)}
+        self.avg_best_fitness = {gen: [] for gen in range(nr_gens)}
+        self.track_avg_best_size = {gen: [] for gen in range(nr_gens)}
+        self.track_avg_best_age = {gen: [] for gen in range(nr_gens)}
+        self.track_avg_best_fitness = {gen: [] for gen in range(nr_gens)}
 
-        self.avg_nr_attacks = []
-        self.track_avg_nr_attacks = []
+        self.avg_nr_attacks = {gen: [] for gen in range(nr_gens)}
+        self.track_avg_nr_attacks = {gen: [] for gen in range(nr_gens)}
 
         self.avg_nr_populations = []
         self.track_avg_nr_populations = []
@@ -113,12 +117,19 @@ class Results:
 
                 plt.show(block=False)
 
-    def _update_avg_nr_attacks(self, actions):
+    def _update_avg_nr_attacks(self, agents):
         """ Track the average size of all populations """
-        if len(actions) != 0:
-            self.track_avg_nr_attacks.append(len([action for action in actions if action >= 4])/len(actions)*100)
+        if agents:
+            for gen in range(self.nr_gens):
+                actions = [agent.action for agent in agents if agent.gen == gen]
+                attacks = [action for action in actions if action >= 4]
+                if len(actions) == 0:
+                    self.track_avg_nr_attacks[gen].append(-1)
+                else:
+                    self.track_avg_nr_attacks[gen].append(len(attacks) / len(actions))
         else:
-            self.track_avg_nr_attacks.append(-1)
+            for gen in range(self.nr_gens):
+                self.track_avg_nr_attacks[gen].append(-1)
 
     def _update_avg_nr_populations(self, agents):
         """ Update the best fitness of all entities """
@@ -132,51 +143,83 @@ class Results:
     def _update_avg_population_size(self, agents):
         """ Track the average size of all populations """
         if agents:
-            gens = [agent.gen for agent in agents]
-            unique, counts = np.unique(gens, return_counts=True)
-            self.track_avg_population_size.append(np.mean(counts))
+            for gen in range(self.nr_gens):
+                gens = [agent.gen for agent in agents if agent.gen == gen]
+                if len(gens) == 0:
+                    self.track_avg_population_size[gen].append(-1)
+                else:
+                    unique, counts = np.unique(gens, return_counts=True)
+                    self.track_avg_population_size[gen].append(np.mean(counts))
         else:
-            self.track_avg_population_size.append(-1)
+            for gen in range(self.nr_gens):
+                self.track_avg_population_size[gen].append(-1)
 
-    def _update_avg_population_fitness(self, fitness):
+    def _update_avg_population_fitness(self, agents):
         """ Update the average fitness/reward of all entities """
-        if fitness:
-            avg_fitness = np.mean(fitness)
-            self.track_avg_population_fitness.append(avg_fitness)
+        if agents:
+            for gen in range(self.nr_gens):
+                fitness = [agent.reward for agent in agents if agent.gen == gen]
+                if len(fitness) == 0:
+                    self.track_avg_population_fitness[gen].append(-1)
+                else:
+                    self.track_avg_population_fitness[gen].append(np.mean(fitness))
         else:
-            self.track_avg_population_fitness.append(-1)
+            for gen in range(self.nr_gens):
+                self.track_avg_population_fitness[gen].append(-1)
 
     def _update_avg_population_age(self, agents):
         """ Update the average age of all entities """
         if agents:
-            avg_pop_size = np.mean([agent.age for agent in agents])
-            self.track_avg_population_age.append(avg_pop_size)
+            for gen in range(self.nr_gens):
+                pop_age = [agent.age for agent in agents if agent.gen == gen]
+                if len(pop_age) == 0:
+                    self.track_avg_population_age[gen].append(-1)
+                else:
+                    self.track_avg_population_age[gen].append(np.mean(pop_age))
         else:
-            self.track_avg_population_age.append(-1)
+            for gen in range(self.nr_gens):
+                self.track_avg_population_age[gen].append(-1)
 
-    def _update_avg_best_fitness(self, fitness):
+    def _update_avg_best_fitness(self, agents):
         """ Update the best fitness of all entities """
-        if fitness:
-            self.track_avg_best_fitness.append(max(fitness))
+        if agents:
+            for gen in range(self.nr_gens):
+
+                fitness = [agent.reward for agent in agents if agent.gen == gen]
+                if len(fitness) == 0:
+                    self.track_avg_best_fitness[gen].append(-1)
+                else:
+                    self.track_avg_best_fitness[gen].append(max(fitness))
         else:
-            self.track_avg_best_fitness.append(-1)
+            for gen in range(self.nr_gens):
+                self.track_avg_best_fitness[gen].append(-1)
 
     def _update_avg_best_age(self, agents):
         """ Update the best fitness of all entities """
         if agents:
-            self.track_avg_best_age.append(max([agent.age for agent in agents]))
+            for gen in range(self.nr_gens):
+                ages = [agent.age for agent in agents if agent.gen == gen]
+                if len(ages) == 0:
+                    self.track_avg_best_age[gen].append(-1)
+                else:
+                    self.track_avg_best_age[gen].append(max([agent.age for agent in agents if agent.gen == gen]))
         else:
-            self.track_avg_best_age.append(-1)
+            for gen in range(self.nr_gens):
+                self.track_avg_best_age[gen].append(-1)
 
     def _update_avg_best_size(self, agents):
         """ Update the best fitness of all entities """
         """ Track the average size of all populations """
         if agents:
-            gens = [agent.gen for agent in agents]
-            unique, counts = np.unique(gens, return_counts=True)
-            self.track_avg_best_size.append(max(counts))
+            for gen in range(self.nr_gens):
+                gens = len([agent.gen for agent in agents if agent.gen == gen])
+                if gens == 0:
+                    self.track_avg_best_size[gen].append(-1)
+                else:
+                    self.track_avg_best_size[gen].append(gens)
         else:
-            self.track_avg_best_size.append(-1)
+            for gen in range(self.nr_gens):
+                self.track_avg_best_size[gen].append(-1)
 
     def _update_oldest_entities(self, agents):
         """ Update the oldest entity """
@@ -211,38 +254,31 @@ class Results:
         # Average the results between and within episodes
         self._update_avg_population_size(agents)
         self._update_avg_population_age(agents)
-        self._update_avg_population_fitness(fitness)
-        self._update_avg_nr_attacks(actions)
+        self._update_avg_population_fitness(agents)
+        self._update_avg_nr_attacks(agents)
         self._update_avg_nr_populations(agents)
 
         # Average results between episodes and take the max within episodes
         self._update_avg_best_age(agents)
         self._update_avg_best_size(agents)
-        self._update_avg_best_fitness(fitness)
+        self._update_avg_best_fitness(agents)
 
         # Update highest
         self._update_oldest_entities(agents)
         self._update_best_fitness(agents)
 
         if n_epi % self.print_interval == 0 and n_epi != 0:
-            self.avg_population_age.append(self._aggregate(self.track_avg_population_age))
-            self.avg_population_size.append(self._aggregate(self.track_avg_population_size))
-            self.avg_population_fitness.append(self._aggregate(self.track_avg_population_fitness))
-            self.avg_nr_attacks.append(self._aggregate(self.track_avg_nr_attacks))
 
-            self.avg_best_age.append(self._aggregate(self.track_avg_best_age))
-            self.avg_best_size.append(self._aggregate(self.track_avg_best_size))
-            self.avg_best_fitness.append(self._aggregate(self.track_avg_best_fitness))
+            for gen in range(self.nr_gens):
+                self.avg_population_size[gen].append(self._aggregate(self.track_avg_population_size[gen]))
+                self.avg_population_age[gen].append(self._aggregate(self.track_avg_population_age[gen]))
+                self.avg_population_fitness[gen].append(self._aggregate(self.track_avg_population_fitness[gen]))
+                self.avg_best_age[gen].append(self._aggregate(self.track_avg_best_age[gen]))
+                self.avg_best_size[gen].append(self._aggregate(self.track_avg_best_size[gen]))
+                self.avg_best_fitness[gen].append(self._aggregate(self.track_avg_best_fitness[gen]))
 
+                self.avg_nr_attacks[gen].append(self._aggregate(self.track_avg_nr_attacks[gen]))
             self.avg_nr_populations.append(self._aggregate(self.track_avg_nr_populations))
-
-            print(f"######## Results ######## \n"
-                  f"Episode: {n_epi}  \n"
-                  f"Avg pop size: {self.avg_population_age[-1]}  \n"
-                  f"Avg age: {self.avg_population_age[-1]}  \n"
-                  f"Avg oldest: {self._get_avg(self.oldest_entities)}  \n"
-                  f"Avg best scores: {self._get_avg(self.best_fitness_list)} \n"
-                  f"Best score: {self.best_fitness}  \n")
 
             if self.interactive:
 
@@ -250,68 +286,91 @@ class Results:
                     self._plot_google()
 
                 else:
-                    x = np.arange(self.print_interval, (len(self.avg_population_age) * self.print_interval) + 1,
+                    x = np.arange(self.print_interval, (len(self.avg_population_age[0]) * self.print_interval) + 1,
                                   self.print_interval)
-                    self.ax[0][0].plot(x, self.avg_population_age, 'r-')
-                    self.ax[0][1].plot(x, self.avg_population_fitness, 'r-')
-                    self.ax[0][2].plot(x, self.avg_population_size, 'r-')
-                    self.ax[1][0].plot(x, self.avg_best_age, 'r-')
-                    self.ax[1][1].plot(x, self.avg_best_fitness, 'r-')
-                    self.ax[1][2].plot(x, self.avg_best_size, 'r-')
-                    self.ax[2][0].plot(x, self.avg_nr_attacks, 'r-')
+                    for gen in range(self.nr_gens):
+                        self.ax[0][0].plot(x, self.avg_population_age[gen], label=gen)
+                        self.ax[0][1].plot(x, self.avg_population_fitness[gen], label=gen)
+                        self.ax[0][2].plot(x, self.avg_population_size[gen], label=gen)
+                        self.ax[1][0].plot(x, self.avg_best_age[gen], label=gen)
+                        self.ax[1][1].plot(x, self.avg_best_fitness[gen], label=gen)
+                        self.ax[1][2].plot(x, self.avg_best_size[gen], label=gen)
+                        self.ax[2][0].plot(x, self.avg_nr_attacks[gen], label=gen)
+
                     plt.draw()
                     mypause(0.0001)
 
     def _plot_google(self):
-        x = np.arange(self.print_interval, (len(self.avg_population_age) * self.print_interval) + 1,
+        x = np.arange(self.print_interval, (len(self.avg_population_age[0]) * self.print_interval) + 1,
                       self.print_interval)
 
         with self.grid.output_to(0, 0):
             self.grid.clear_cell()
             plt.figure(figsize=(3, 3))
             plt.title("Average Population Age")
-            plt.plot(x, self.avg_population_age)
+
+            for gen in range(self.nr_gens):
+                plt.plot(x, self.avg_population_age[gen], label=str(gen))
+            plt.legend()
 
         with self.grid.output_to(0, 1):
             self.grid.clear_cell()
             plt.figure(figsize=(3, 3))
             plt.title("Average Population Fitness")
-            plt.plot(x, self.avg_population_fitness)
+
+            for gen in range(self.nr_gens):
+                plt.plot(x, self.avg_population_fitness[gen], label=str(gen))
+            plt.legend()
 
         with self.grid.output_to(0, 2):
             self.grid.clear_cell()
             plt.figure(figsize=(3, 3))
             plt.title("Average Population Size")
-            plt.plot(x, self.avg_population_size)
+
+            for gen in range(self.nr_gens):
+                plt.plot(x, self.avg_population_size[gen], label=str(gen))
+            plt.legend()
 
         with self.grid.output_to(1, 0):
             self.grid.clear_cell()
             plt.figure(figsize=(3, 3))
             plt.title("Best Population Age")
-            plt.plot(x, self.avg_best_age)
+
+            for gen in range(self.nr_gens):
+                plt.plot(x, self.avg_best_age[gen], label=str(gen))
+            plt.legend()
 
         with self.grid.output_to(1, 1):
             self.grid.clear_cell()
             plt.figure(figsize=(3, 3))
             plt.title("Best Population Fitness")
-            plt.plot(x, self.avg_best_fitness)
+
+            for gen in range(self.nr_gens):
+                plt.plot(x, self.avg_best_fitness[gen], label=str(gen))
+            plt.legend()
 
         with self.grid.output_to(1, 2):
             self.grid.clear_cell()
             plt.figure(figsize=(3, 3))
             plt.title("Best Population Size")
-            plt.plot(x, self.avg_best_size)
+
+            for gen in range(self.nr_gens):
+                plt.plot(x, self.avg_best_size[gen], label=str(gen))
+            plt.legend()
 
         with self.grid.output_to(2, 0):
             self.grid.clear_cell()
             plt.figure(figsize=(3, 3))
             plt.title("Average Nr Attacks")
-            plt.plot(x, self.avg_nr_attacks)
+
+            for gen in range(self.nr_gens):
+                plt.plot(x, self.avg_nr_attacks[gen], label=str(gen))
+            plt.legend()
 
         with self.grid.output_to(2, 1):
             self.grid.clear_cell()
             plt.figure(figsize=(3, 3))
-            plt.title("Average Nr Popluations")
+            plt.title("Average Nr Populations")
             plt.plot(x, self.avg_nr_populations)
 
 
