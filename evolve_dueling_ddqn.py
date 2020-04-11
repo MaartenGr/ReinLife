@@ -1,4 +1,4 @@
-from TheGame.Models.ddqn import DDQNAgent
+from TheGame.Models.dueling_ddqn import DDQNAgent
 from TheGame import Environment
 from TheGame.utils import Results
 from tqdm import tqdm
@@ -6,6 +6,12 @@ from tqdm import tqdm
 save_best = True
 max_epi = 10_000
 learning_rate = 0.0005
+epsilon = 0.9
+epsilon_min = 0.05
+decay = 0.99
+soft_update_freq = 100
+exploration = 500
+
 track_results = Results(print_interval=500, interactive=True, google_colab=False, nr_gens=2)
 
 # Initialize Env
@@ -14,8 +20,11 @@ env = Environment(width=30, height=30, nr_agents=2, evolution=True, fps=20, max_
 s = env.reset()
 
 for n_epi in tqdm(range(max_epi)):
+    if epsilon > epsilon_min:
+        epsilon = epsilon * decay
+
     for agent in env.agents:
-        agent.action = env.brains[agent.gen].get_action(agent.state)
+        agent.action = env.brains[agent.gen].get_action(agent.state, epsilon)
 
     env.step()
 
@@ -25,24 +34,14 @@ for n_epi in tqdm(range(max_epi)):
 
     # Learn
     for agent in env.agents:
+        if n_epi > exploration:
+            if agent.age % 20 == 0 or agent.dead:
+                env.brains[agent.gen].train()
 
-        if agent.age % 20 == 0 or agent.dead:
-            if env.brains[agent.gen].buffer.size() >= 32:
-                env.brains[agent.gen].replay()
-        env.brains[agent.gen].target_update()
+        if n_epi % soft_update_freq == 0:
+            env.brains[agent.gen].target_net.load_state_dict(env.brains[agent.gen].eval_net.state_dict())
 
     track_results.update_results(env.agents, n_epi, [agent.action for agent in env.agents],
                                  [agent.reward for agent in env.agents])
     s = env.update_env()
-
-    # env.render()
-
-if save_best:
-    env.save_best_brain(max_epi)
-
-while True:
-    for agent in env.agents:
-        agent.action = env.brains[agent.gen].get_action(agent.state, 0)
-    env.step()
-    s = env.update_env()
-    env.render(fps=10)
+    env.render(fps=120)

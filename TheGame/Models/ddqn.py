@@ -12,15 +12,12 @@ import random
 
 tf.keras.backend.set_floatx('float64')
 
-parser = argparse.ArgumentParser()
-parser.add_argument('--gamma', type=float, default=0.95)
-parser.add_argument('--lr', type=float, default=0.005)
-parser.add_argument('--batch_size', type=int, default=32)
-parser.add_argument('--eps', type=float, default=1.0)
-parser.add_argument('--eps_decay', type=float, default=0.995)
-parser.add_argument('--eps_min', type=float, default=0.01)
-
-args = parser.parse_args()
+gamma = 0.95
+learning_rate = 0.005
+batch_size = 32
+eps = 1.0
+eps_decay = 0.995
+eps_min = 0.01
 
 
 class ReplayBuffer:
@@ -31,10 +28,10 @@ class ReplayBuffer:
         self.buffer.append([state, action, reward, next_state, done])
 
     def sample(self):
-        sample = random.sample(self.buffer, args.batch_size)
+        sample = random.sample(self.buffer, batch_size)
         states, actions, rewards, next_states, done = map(np.asarray, zip(*sample))
-        states = np.array(states).reshape(args.batch_size, -1)
-        next_states = np.array(next_states).reshape(args.batch_size, -1)
+        states = np.array(states).reshape(batch_size, -1)
+        next_states = np.array(next_states).reshape(batch_size, -1)
         return states, actions, rewards, next_states, done
 
     def size(self):
@@ -45,7 +42,7 @@ class ActionStateModel:
     def __init__(self, state_dim, aciton_dim):
         self.state_dim = state_dim
         self.action_dim = aciton_dim
-        self.epsilon = args.eps
+        self.epsilon = eps
 
         self.model = self.create_model()
 
@@ -62,7 +59,7 @@ class ActionStateModel:
         advantage_output = Dense(self.action_dim)(backbone_2)
         output = Add()([value_output, advantage_output])
         model = tf.keras.Model(state_input, output)
-        model.compile(loss='mse', optimizer=Adam(args.lr))
+        model.compile(loss='mse', optimizer=Adam(learning_rate))
         return model
 
     def predict(self, state):
@@ -70,8 +67,8 @@ class ActionStateModel:
 
     def get_action(self, state):
         state = np.reshape(state, [1, self.state_dim])
-        self.epsilon *= args.eps_decay
-        self.epsilon = max(self.epsilon, args.eps_min)
+        self.epsilon *= eps_decay
+        self.epsilon = max(self.epsilon, eps_min)
         q_value = self.predict(state)[0]
         if np.random.random() < self.epsilon:
             return random.randint(0, self.action_dim - 1)
@@ -101,8 +98,8 @@ class DDQNAgent:
             states, actions, rewards, next_states, done = self.buffer.sample()
             targets = self.target_model.predict(states)
             next_q_values = self.target_model.predict(next_states)[
-                range(args.batch_size), np.argmax(self.model.predict(next_states), axis=1)]
-            targets[range(args.batch_size), actions] = rewards + (1 - done) * next_q_values * args.gamma
+                range(batch_size), np.argmax(self.model.predict(next_states), axis=1)]
+            targets[range(batch_size), actions] = rewards + (1 - done) * next_q_values * gamma
             self.model.train(states, targets)
 
     def get_action(self, state):
@@ -126,7 +123,7 @@ class DDQNAgent:
                 total_reward += reward
                 state = next_state
 
-            if self.buffer.size() >= args.batch_size:
+            if self.buffer.size() >= batch_size:
                 self.replay()
             self.target_update()
             print('EP{} EpisodeReward={}'.format(ep, total_reward))
