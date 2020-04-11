@@ -1,3 +1,5 @@
+# https://github.com/marload/deep-rl-tf2/blob/master/DuelingDoubleDQN/DuelingDoubleDQN_Discrete.py
+
 import tensorflow as tf
 from tensorflow.keras.layers import Input, Dense, Add
 from tensorflow.keras.optimizers import Adam
@@ -79,11 +81,10 @@ class ActionStateModel:
         self.model.fit(states, targets, epochs=1, verbose=0)
 
 
-class Agent:
-    def __init__(self, env):
-        self.env = env
-        self.state_dim = self.env.observation_space.shape[0]
-        self.action_dim = self.env.action_space.n
+class DDQNAgent:
+    def __init__(self, input_dim, output_dim):
+        self.state_dim = input_dim
+        self.action_dim = output_dim
 
         self.model = ActionStateModel(self.state_dim, self.action_dim)
         self.target_model = ActionStateModel(self.state_dim, self.action_dim)
@@ -104,6 +105,16 @@ class Agent:
             targets[range(args.batch_size), actions] = rewards + (1 - done) * next_q_values * args.gamma
             self.model.train(states, targets)
 
+    def get_action(self, state):
+        return self.model.get_action(state)
+
+    def memorize(self, state, action, reward, next_state, done):
+        if done:
+            done_mask = 1.0
+        else:
+            done_mask = 0.0
+        self.buffer.put(state, action, reward * 0.01, next_state, done_mask)
+
     def train(self, max_episodes=1000):
         for ep in range(max_episodes):
             done, total_reward = False, 0
@@ -120,12 +131,3 @@ class Agent:
             self.target_update()
             print('EP{} EpisodeReward={}'.format(ep, total_reward))
 
-
-def main():
-    env = gym.make('CartPole-v1')
-    agent = Agent(env)
-    agent.train(max_episodes=1000)
-
-
-if __name__ == "__main__":
-    main()

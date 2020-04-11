@@ -6,7 +6,7 @@ from tqdm import tqdm
 save_best = True
 max_epi = 10_000
 learning_rate = 0.0005
-track_results = Results(print_interval=100, interactive=True, google_colab=False, nr_gens=2)
+track_results = Results(print_interval=500, interactive=True, google_colab=False, nr_gens=2)
 
 # Initialize Env
 env = Environment(width=30, height=30, nr_agents=2, evolution=True, fps=20, max_agents=100,

@@ -18,7 +18,7 @@
 import torch.optim as optim
 import torch
 
-from TheGame.Models.dqn import ReplayBuffer, Qnet, train
+from TheGame.Models.VanillaDQN import ReplayBuffer, Qnet, train
 from TheGame import Environment
 
 #Hyperparameters

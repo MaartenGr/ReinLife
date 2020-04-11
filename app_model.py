@@ -1,6 +1,6 @@
 from TheGame import Environment
 from TheGame.Models.ppo import PPOAgent
-from TheGame.Models.dqn import DQNAgent
+from TheGame.Models.VanillaDQN import DQNAgent
 from TheGame.Models.perdqn import DQNAgent as PERDQNAgent
 
 main_brains = [PPOAgent(150, 8, load_model="Brains/PPO/model_120000_300.pt"),

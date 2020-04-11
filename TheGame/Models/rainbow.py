@@ -501,6 +501,7 @@ class DQNAgent:
         self.is_test = False
 
         self.update_cnt = 0
+        self.n_epi = 0
 
     def get_action(self, state: np.ndarray) -> np.ndarray:
         """Select an action from the input state."""
@@ -509,9 +510,6 @@ class DQNAgent:
             torch.FloatTensor(state).to(self.device)
         ).argmax()
         selected_action = selected_action.detach().cpu().numpy()
-
-        if not self.is_test:
-            self.transition = [state, selected_action]
 
         return selected_action
 
@@ -558,10 +556,10 @@ class DQNAgent:
 
         return loss.item()
 
-    def memorize(self, reward, next_state, done):
+    def memorize(self, state, action, reward, next_state, done):
         if not self.is_test:
-            if len(self.transition) == 2:
-                self.transition += [reward, next_state, done]
+            self.transition = [state, action]
+            self.transition += [reward, next_state, done]
 
             # N-step transition
             if self.use_n_step:
@@ -578,7 +576,10 @@ class DQNAgent:
 
         # PER: increase beta
         fraction = min(n_epi / max_epi, 1.0)
-        self.beta = self.beta + fraction * (1.0 - self.beta)
+
+        if self.n_epi == n_epi:
+            self.beta = self.beta + fraction * (1.0 - self.beta)
+            self.n_epi += 1
 
         # if training is ready
         if len(self.memory) >= self.batch_size:
