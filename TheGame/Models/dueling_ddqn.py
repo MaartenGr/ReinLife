@@ -61,13 +61,18 @@ class dueling_ddqn(nn.Module):
 
 
 class DDQNAgent:
-    def __init__(self, input_dim, output_dim):
+    def __init__(self, input_dim, output_dim, load_model=False):
         self.target_net = dueling_ddqn(input_dim, output_dim)
         self.eval_net = dueling_ddqn(input_dim, output_dim)
         self.eval_net.load_state_dict(self.target_net.state_dict())
         self.optimizer = torch.optim.Adam(self.eval_net.parameters(), lr=learning_rate)
         self.buffer = replay_buffer(capacity)
         self.loss_fn = nn.MSELoss()
+        self.method = "DDQN"
+
+        if load_model:
+            self.eval_net.load_state_dict(torch.load(load_model))
+            self.eval_net.eval()
 
     def get_action(self, state, epsilon):
         action = self.eval_net.act(torch.FloatTensor(np.expand_dims(state, 0)), epsilon)
