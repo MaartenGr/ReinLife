@@ -58,7 +58,7 @@ class A2CAgent:
         return critic
 
     # using the output of policy network, pick action stochastically
-    def get_action(self, state):
+    def get_action(self, state, n_epi):
         state = np.reshape(state, [1, self.state_size])
         policy = self.actor.predict(state, batch_size=1).flatten()
         return np.random.choice(self.action_size, 1, p=policy)[0]
@@ -83,3 +83,8 @@ class A2CAgent:
 
         self.actor.fit(state, advantages, epochs=1, verbose=0)
         self.critic.fit(state, target, epochs=1, verbose=0)
+
+    def learn(self, age, dead, state, action, reward, state_prime, done):
+
+        if age % 20 == 0 or dead:
+            self.train_model(state, action, reward, state_prime, done)

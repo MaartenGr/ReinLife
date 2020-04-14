@@ -15,20 +15,32 @@ batch_size = 32
 
 
 class DQNAgent:
-    def __init__(self, input_dim, learning_rate=0.0005, load_model=False):
+    def __init__(self, input_dim, max_epi, learning_rate=0.0005, train_freq=20, load_model=False, training=True):
         self.agent = Qnet(input_dim)
         self.target = Qnet(input_dim)
         self.target.load_state_dict(self.agent.state_dict())
         self.memory = ReplayBuffer()
         self.optimizer = optim.Adam(self.agent.parameters(), lr=learning_rate)
         self.method = 'DQN'
+        self.max_epi = max_epi
+        self.epsilon = 0.20
+        self.train_freq = train_freq
+
+        self.training = training
+        if not self.training:
+            self.epsilon = 0
 
         if load_model:
             self.agent.load_state_dict(torch.load(load_model))
             self.agent.eval()
 
-    def get_action(self, s, epsilon=0):
-        return self.agent.sample_action(s, epsilon)
+    def get_action(self, state, n_epi):
+
+        if self.training:
+            if n_epi % 30 == 0:
+                self.epsilon = max(0.01, 0.20 - 0.20 * (n_epi / self.max_epi))  # Linear annealing from 8% to 1%
+
+        return self.agent.sample_action(state, self.epsilon)
 
     def memorize(self, s, a, r, s_prime, done):
         if done:
@@ -41,6 +53,12 @@ class DQNAgent:
         if self.memory.size() > 1000:
             train(self.agent, self.target, self.memory, self.optimizer)
         self.target.load_state_dict(self.agent.state_dict())
+
+    def learn(self, age, dead, action, state, reward, state_prime, done):
+        self.memorize(state, action, reward, state_prime, done)
+
+        if age % 20 == 0 or dead:
+            self.train()
 
 
 class ReplayBuffer():

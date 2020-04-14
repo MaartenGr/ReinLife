@@ -1,131 +1,164 @@
-import tensorflow as tf
-from tensorflow.keras.layers import Input, Dense, Add
-from tensorflow.keras.optimizers import Adam
-
-import gym
-import argparse
 import numpy as np
-from collections import deque
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
 import random
-
-tf.keras.backend.set_floatx('float64')
-
-parser = argparse.ArgumentParser()
-parser.add_argument('--gamma', type=float, default=0.95)
-parser.add_argument('--lr', type=float, default=0.005)
-parser.add_argument('--batch_size', type=int, default=32)
-parser.add_argument('--eps', type=float, default=1.0)
-parser.add_argument('--eps_decay', type=float, default=0.995)
-parser.add_argument('--eps_min', type=float, default=0.01)
-
-args = parser.parse_args()
+import gym
+from collections import deque
 
 
-class ReplayBuffer:
-    def __init__(self, capacity=10000):
-        self.buffer = deque(maxlen=capacity)
+class replay_buffer(object):
+    def __init__(self, capacity):
+        self.capacity = capacity
+        self.memory = deque(maxlen=self.capacity)
 
-    def put(self, state, action, reward, next_state, done):
-        self.buffer.append([state, action, reward, next_state, done])
+    def store(self, observation, action, reward, next_observation, done, ):
+        observation = np.expand_dims(observation, 0)
+        next_observation = np.expand_dims(next_observation, 0)
+        self.memory.append([observation, action, reward, next_observation, done])
 
-    def sample(self):
-        sample = random.sample(self.buffer, args.batch_size)
-        states, actions, rewards, next_states, done = map(np.asarray, zip(*sample))
-        states = np.array(states).reshape(args.batch_size, -1)
-        next_states = np.array(next_states).reshape(args.batch_size, -1)
-        return states, actions, rewards, next_states, done
+    def sample(self, size):
+        batch = random.sample(self.memory, size)
+        observation, action, reward, next_observation, done = zip(* batch)
+        return np.concatenate(observation, 0), action, reward, np.concatenate(next_observation, 0), done
 
-    def size(self):
-        return len(self.buffer)
-
-
-class ActionStateModel:
-    def __init__(self, state_dim, aciton_dim):
-        self.state_dim = state_dim
-        self.action_dim = aciton_dim
-        self.epsilon = args.eps
-
-        self.model = self.create_model()
-
-    def create_model(self):
-        backbone = tf.keras.Sequential([
-            Input((self.state_dim,)),
-            Dense(32, activation='relu'),
-            Dense(16, activation='relu')
-        ])
-        state_input = Input((self.state_dim,))
-        backbone_1 = Dense(32, activation='relu')(state_input)
-        backbone_2 = Dense(16, activation='relu')(backbone_1)
-        value_output = Dense(1)(backbone_2)
-        advantage_output = Dense(self.action_dim)(backbone_2)
-        output = Add()([value_output, advantage_output])
-        model = tf.keras.Model(state_input, output)
-        model.compile(loss='mse', optimizer=Adam(args.lr))
-        return model
-
-    def predict(self, state):
-        return self.model.predict(state)
-
-    def get_action(self, state):
-        state = np.reshape(state, [1, self.state_dim])
-        self.epsilon *= args.eps_decay
-        self.epsilon = max(self.epsilon, args.eps_min)
-        q_value = self.predict(state)[0]
-        if np.random.random() < self.epsilon:
-            return random.randint(0, self.action_dim - 1)
-        return np.argmax(q_value)
-
-    def train(self, states, targets):
-        self.model.fit(states, targets, epochs=1, verbose=0)
+    def __len__(self):
+        return len(self.memory)
 
 
-class Agent:
-    def __init__(self, env):
-        self.env = env
-        self.state_dim = self.env.observation_space.shape[0]
-        self.action_dim = self.env.action_space.n
+class qr_dqn(nn.Module):
+    def __init__(self, observation_dim, action_dim, quant_num):
+        super(qr_dqn, self).__init__()
+        self.observation_dim = observation_dim
+        self.action_dim = action_dim
+        self.quant_num = quant_num
 
-        self.model = ActionStateModel(self.state_dim, self.action_dim)
-        self.target_model = ActionStateModel(self.state_dim, self.action_dim)
-        self.target_update()
+        self.fc1 = nn.Linear(self.observation_dim, 32)
+        self.fc2 = nn.Linear(32, 64)
+        self.fc3 = nn.Linear(64, 128)
+        self.fc4 = nn.Linear(128, self.action_dim * self.quant_num)
 
-        self.buffer = ReplayBuffer()
+    def forward(self, observation):
+        batch_size = observation.size(0)
+        x = F.relu(self.fc1(observation))
+        x = F.relu(self.fc2(x))
+        x = F.relu(self.fc3(x))
+        x = self.fc4(x)
+        x = x.view(batch_size, self.action_dim, self.quant_num)
+        return x
 
-    def target_update(self):
-        weights = self.model.model.get_weights()
-        self.target_model.model.set_weights(weights)
-
-    def replay(self):
-        for _ in range(10):
-            states, actions, rewards, next_states, done = self.buffer.sample()
-            targets = self.target_model.predict(states)
-            next_q_values = self.target_model.predict(next_states)[
-                range(args.batch_size), np.argmax(self.model.predict(next_states), axis=1)]
-            targets[range(args.batch_size), actions] = rewards + (1 - done) * next_q_values * args.gamma
-            self.model.train(states, targets)
-
-    def train(self, max_episodes=1000):
-        for ep in range(max_episodes):
-            done, total_reward = False, 0
-            state = self.env.reset()
-            while not done:
-                action = self.model.get_action(state)
-                next_state, reward, done, _ = self.env.step(action)
-                self.buffer.put(state, action, reward * 0.01, next_state, done)
-                total_reward += reward
-                state = next_state
-
-            if self.buffer.size() >= args.batch_size:
-                self.replay()
-            self.target_update()
-            print('EP{} EpisodeReward={}'.format(ep, total_reward))
+    def act(self, observation, epsilon):
+        if random.random() > epsilon:
+            dist = self.forward(observation)
+            action = dist.mean(2).max(1)[1].detach()[0].item()
+        else:
+            action = random.choice(list(range(self.action_dim)))
+        return action
 
 
-def main():
-    env = gym.make('CartPole-v1')
-    agent = Agent(env)
-    agent.train(max_episodes=1000)
+def get_target_distribution(target_model, next_observation, reward, done, gamma, action_dim, quant_num):
+    batch_size = next_observation.size(0)
+
+    next_dist = target_model.forward(next_observation).detach()
+    next_action = next_dist.mean(2).max(1)[1].detach()
+    next_action = next_action.unsqueeze(1).unsqueeze(1).expand(batch_size, 1, quant_num)
+    next_dist = next_dist.gather(1, next_action).squeeze(1)
+
+    reward = reward.unsqueeze(1).expand(batch_size, quant_num)
+    done = done.unsqueeze(1).expand(batch_size, quant_num)
+    target_dist = reward + gamma * (1 - done) * next_dist
+    target_dist.detach_()
+
+    quant_idx = torch.sort(next_dist, 1, descending=False)[1]
+    # Midpoint quantile targets need to sort
+    tau_hat = torch.linspace(0.0, 1.0 - 1. / quant_num, quant_num) + 0.5 / quant_num
+    tau_hat = tau_hat.unsqueeze(0).expand(batch_size, quant_num)
+    batch_idx = np.arange(batch_size)
+    tau = tau_hat[:, quant_idx][batch_idx, batch_idx]
+    return target_dist, tau
 
 
-if __name__ == "__main__":
-    main()
+def train(eval_model, target_model, buffer, optimizer, gamma, action_dim, quant_num, batch_size, count, update_freq, k=1.):
+    observation, action, reward, next_observation, done = buffer.sample(batch_size)
+
+    observation = torch.FloatTensor(observation)
+    action = torch.LongTensor(action)
+    reward = torch.FloatTensor(reward)
+    next_observation = torch.FloatTensor(next_observation)
+    done = torch.FloatTensor(done)
+
+    dist = eval_model.forward(observation)
+    action = action.unsqueeze(1).unsqueeze(1).expand(batch_size, 1, quant_num)
+    dist = dist.gather(1, action).squeeze(1)
+    target_dist, tau = get_target_distribution(target_model, next_observation, reward, done, gamma, action_dim, quant_num)
+
+    u = target_dist - dist
+
+    huber_loss = 0.5 * u.abs().clamp(min=0., max=k).pow(2)
+    huber_loss = huber_loss + k * (u.abs() - u.abs().clamp(min=0., max=k) - 0.5 * k)
+    quantile_loss = (tau - (u < 0).float()).abs() * huber_loss
+    loss = quantile_loss.sum() / batch_size
+
+    optimizer.zero_grad()
+    loss.backward()
+    nn.utils.clip_grad_norm_(eval_model.parameters(), 0.5)
+    optimizer.step()
+
+    if count % update_freq == 0:
+        target_model.load_state_dict(eval_model.state_dict())
+
+
+if __name__ == '__main__':
+    epsilon_init = 0.95
+    epsilon_decay = 0.995
+    epsilon_min = 0.01
+    gamma = 0.99
+    learning_rate = 1e-3
+    capacity = 100000
+    exploration = 200
+    episode = 1000000
+    quant_num = 10
+    update_freq = 200
+    n_step = 1
+    batch_size = 64
+    k = 1.
+    render = False
+
+    env = gym.make('CartPole-v0')
+    env = env.unwrapped
+    observation_dim = env.observation_space.shape[0]
+    action_dim = env.action_space.n
+    buffer = replay_buffer(capacity)
+    eval_net = qr_dqn(observation_dim, action_dim, quant_num)
+    target_net = qr_dqn(observation_dim, action_dim, quant_num)
+    target_net.load_state_dict(eval_net.state_dict())
+    optimizer = torch.optim.Adam(eval_net.parameters(), lr=learning_rate)
+    count = 0
+    epsilon = epsilon_init
+    weight_reward = None
+
+    for i in range(episode):
+        obs = env.reset()
+        reward_total = 0
+        if render:
+            env.render()
+        while True:
+            action = eval_net.act(torch.FloatTensor(np.expand_dims(obs, 0)), epsilon)
+            next_obs, reward, done, info = env.step(action)
+            buffer.store(obs, action, reward, next_obs, done)
+            if render:
+                env.render()
+            reward_total += reward
+            count = count + 1
+            obs = next_obs
+            if i > exploration:
+                train(eval_net, target_net, buffer, optimizer, gamma, action_dim, quant_num, batch_size, count, update_freq, k=1.)
+            if done:
+                if epsilon > epsilon_min:
+                    epsilon = epsilon * epsilon_decay
+                if not weight_reward:
+                    weight_reward = reward_total
+                else:
+                    weight_reward = 0.99 * weight_reward + 0.01 * reward_total
+                print('episode: {}  reward: {}  weight_reward: {:.3f}  epsilon: {:.2f}'.format(i+1, reward_total, weight_reward, epsilon))
+                break

@@ -58,3 +58,16 @@ class Agent:
         self.j_target = j
         self.target_coordinates = [i, j]
 
+    def learn(self, **kwargs):
+        if self.brain.method == "PPO":
+            self.brain.learn(age=self.age, dead=self.dead, action=self.action, state=self.state, reward=self.reward,
+                             state_prime=self.state_prime, done=self.done, prob=self.prob)
+        elif self.brain.method == "DRQN":
+            self.brain.learn(age=self.age, dead=self.dead, action=self.action, state=self.state, reward=self.reward,
+                             state_prime=self.state_prime, done=self.done, **kwargs)
+        elif self.brain.method in ["DQN", "A2C", "PERDQN"]:
+            self.brain.learn(age=self.age, dead=self.dead, action=self.action, state=self.state, reward=self.reward,
+                             state_prime=self.state_prime, done=self.done)
+        else:
+            self.brain.learn(age=self.age, dead=self.dead, action=self.action, state=self.state, reward=self.reward,
+                             state_prime=self.state_prime, done=self.done, **kwargs)

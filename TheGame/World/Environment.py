@@ -16,7 +16,7 @@ from TheGame.World.Render import Visualize
 
 
 class Environment(gym.Env):
-    def __init__(self, width=30, height=30, nr_agents=10, evolution=False, fps=60, brains=None,
+    def __init__(self, width=30, height=30, evolution=False, fps=20, brains=None,
                  grid_size=16, max_agents=10, pastel=False, extended_fov=False):
 
         # Classes
@@ -33,16 +33,16 @@ class Environment(gym.Env):
         # Trackers
         self.agents = []
         self.best_agents = []
-        self.nr_agents = nr_agents
+        self.nr_agents = len(brains)
         self.max_agents = max_agents
-        self.max_gen = nr_agents
+        self.max_gen = self.nr_agents
         self.evolution = evolution
         self.fps = fps
         self.pastel = pastel
         self.extended_fov = extended_fov
 
         if not brains:
-            self.brains = [None for _ in range(nr_agents)]
+            self.brains = [None for _ in range(self.nr_agents)]
         else:
             self.brains = brains
 

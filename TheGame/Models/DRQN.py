@@ -8,7 +8,7 @@ from collections import deque
 
 class DRQNAgent:
     def __init__(self, observation_dim=152, learning_rate=1e-3, capacity=10000, epsilon_init=0.9, gamma=0.99,
-                 soft_update_freq=100, load_model=False):
+                 soft_update_freq=100, load_model=False, training=True):
         self.observation_dim = observation_dim
         self.action_dim = 8
         self.target_net = drqn_net(self.observation_dim, self.action_dim)
@@ -23,13 +23,23 @@ class DRQNAgent:
         self.gamma = gamma
         self.soft_update_freq = soft_update_freq
         self.method = "DRQN"
+        self.training = training
+        self.epsilon_min = 0.05
+        self.decay = 0.99
+        self.n_epi = 0
 
         if load_model:
             self.eval_net.load_state_dict(torch.load(load_model))
             self.eval_net.eval()
             self.epsilon = 0
 
-    def get_action(self, obs):
+    def get_action(self, obs, n_epi):
+        if self.training:
+            if n_epi > self.n_epi:
+                if self.epsilon > self.epsilon_min:
+                    self.epsilon = self.epsilon * self.decay
+                self.n_epi = n_epi
+
         action, hidden = self.eval_net.act(torch.FloatTensor(np.expand_dims(np.expand_dims(obs, 0), 0)),
                                       self.epsilon,
                                       self.hidden)
@@ -39,10 +49,13 @@ class DRQNAgent:
     def memorize(self, obs, action, reward, next_obs, done):
         self.buffer.store(obs, action, reward, next_obs, done)
 
-    def learn(self, n_epi, exploration):
-
-        if n_epi > exploration:
+    def learn(self, age, dead, action, state, reward, state_prime, done, n_epi):
+        self.memorize(state, action, reward / 200.0, state_prime, done)
+        if age % 20 == 0 or dead:
             self.train()
+
+        if n_epi % self.soft_update_freq == 0:
+            self.target_net.load_state_dict(self.eval_net.state_dict())
 
     def train(self):
         observation, action, reward, next_observation, done = self.buffer.sample()
@@ -67,8 +80,7 @@ class DRQNAgent:
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
-        if self.count % self.soft_update_freq == 0:
-            self.target_net.load_state_dict(self.eval_net.state_dict())
+
 
 class drqn_net(nn.Module):
     def __init__(self, observation_dim, action_dim, time_step=1, layer_num=1, hidden_num=64):

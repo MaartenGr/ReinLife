@@ -23,7 +23,7 @@ class PPOAgent:
             self.agent.load_state_dict(torch.load(load_model))
             self.agent.eval()
 
-    def get_action(self, s):
+    def get_action(self, s, n_epi):
         action, prob = self.agent.get_action(s)
 
         if self.load_model:
@@ -31,7 +31,7 @@ class PPOAgent:
         else:
             return action, prob
 
-    def learn(self):
+    def train(self):
         self.agent.learn()
 
     def put_data(self, transition):
@@ -39,6 +39,14 @@ class PPOAgent:
 
     def data(self):
         return self.agent.data
+
+    def learn(self, age, dead, action, state, reward, state_prime, done, prob):
+
+        self.put_data((state, action, reward / 100.0, state_prime, prob[action].item(), done))
+
+        if age % 20 == 0 or dead:
+            if self.data():
+                self.train()
 
 
 class PPO(nn.Module):

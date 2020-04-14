@@ -140,7 +140,7 @@ class DQN(nn.Module):
 # DQN Agent for the Cartpole
 # it uses Neural Network to approximate q function
 # and prioritized experience replay memory & target q network
-class DQNAgent():
+class PERDQNAgent:
     def __init__(self, state_size, action_size, load_model=False):
         # if you want to see Cartpole learning, then change to True
         self.render = False
@@ -190,7 +190,7 @@ class DQNAgent():
         self.target_model.load_state_dict(self.model.state_dict())
 
     # get action from model using epsilon-greedy policy
-    def get_action(self, state):
+    def get_action(self, state, n_epi):
         state = np.reshape(state, [1, self.state_size])
         if np.random.rand() <= self.epsilon:
             return random.randrange(self.action_size)
@@ -275,3 +275,12 @@ class DQNAgent():
 
         # and train
         self.optimizer.step()
+
+    def learn(self, age, dead, action, state, reward, state_prime, done):
+        self.append_sample(state, action, reward, state_prime, done)
+
+        if age % 20 == 0 or dead:
+            if self.memory.tree.n_entries >= self.train_start:
+                self.train_model()
+
+            self.update_target_model()

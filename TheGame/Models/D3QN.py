@@ -60,22 +60,42 @@ class dueling_ddqn(nn.Module):
         return action
 
 
-class DDQNAgent:
-    def __init__(self, input_dim, output_dim, load_model=False):
+class D3QNAgent:
+    def __init__(self, input_dim, output_dim, exploration=1000, soft_update_freq=200, train_freq=20, load_model=False,
+                 training=True):
         self.target_net = dueling_ddqn(input_dim, output_dim)
         self.eval_net = dueling_ddqn(input_dim, output_dim)
         self.eval_net.load_state_dict(self.target_net.state_dict())
         self.optimizer = torch.optim.Adam(self.eval_net.parameters(), lr=learning_rate)
         self.buffer = replay_buffer(capacity)
         self.loss_fn = nn.MSELoss()
-        self.method = "DDQN"
+        self.method = "D3QN"
+        self.exploration = exploration
+        self.soft_update_freq = soft_update_freq
+        self.train_freq = train_freq
+        self.n_epi = 0
+        self.epsilon = 0.9
+        self.epsilon_min = 0.05
+        self.decay = 0.99
+
+        self.training = training
+        if not self.training:
+            self.epsilon = 0
 
         if load_model:
             self.eval_net.load_state_dict(torch.load(load_model))
             self.eval_net.eval()
 
-    def get_action(self, state, epsilon):
-        action = self.eval_net.act(torch.FloatTensor(np.expand_dims(state, 0)), epsilon)
+    def get_action(self, state, n_epi):
+
+        if self.training:
+            # Update epsilon once
+            if n_epi > self.n_epi:
+                if self.epsilon > self.epsilon_min:
+                    self.epsilon = self.epsilon * self.decay
+                self.n_epi = n_epi
+
+        action = self.eval_net.act(torch.FloatTensor(np.expand_dims(state, 0)), self.epsilon)
         return action
 
     def memorize(self, obs, action, reward, next_obs, done):
@@ -101,3 +121,14 @@ class DDQNAgent:
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
+
+    def learn(self, age, dead, action, state, reward, state_prime, done, n_epi):
+        self.memorize(state, action, reward, state_prime, done)
+
+        if n_epi > self.exploration:
+            if age % self.train_freq == 0 or dead:
+                self.train()
+
+            if n_epi % self.soft_update_freq == 0:
+                self.target_net.load_state_dict(self.eval_net.state_dict())
+

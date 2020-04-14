@@ -128,3 +128,12 @@ class DDQNAgent:
             self.target_update()
             print('EP{} EpisodeReward={}'.format(ep, total_reward))
 
+    def learn(self, age, dead, action, state, reward, state_prime, done):
+        self.memorize(state, action, reward, state_prime, done)
+
+        if age % 20 == 0 or dead:
+            if self.buffer.size() >= 32:
+                self.replay()
+
+        self.target_update()
+
