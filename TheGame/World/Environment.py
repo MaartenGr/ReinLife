@@ -86,6 +86,9 @@ class Environment(gym.Env):
             if np.random.random() < 0.05:
                 self.grid.set_random(Entity, p=1, value=self.entities.poison)
 
+        # Add super berrry
+        self.grid.set_random(Entity, p=1, value=self.entities.super_berry)
+
         obs, _ = self._get_obs()
         for agent in self.agents:
             agent.state = agent.state_prime
@@ -110,6 +113,9 @@ class Environment(gym.Env):
             for i in range(3):
                 if np.random.random() < 0.2:
                     self.grid.set_random(Entity, p=1, value=self.entities.poison)
+
+        if len(np.where(self.grid.get_numpy() == self.entities.super_berry)[0]) == 0:
+            self.grid.set_random(Entity, p=1, value=self.entities.super_berry)
 
         obs, _ = self._get_obs()
         # self._update_best_agents()
@@ -300,7 +306,7 @@ class Environment(gym.Env):
                                [agent.i / self.width] + [agent.j / self.height] + [reproduced] + [nr_genes])
             else:
                 fov = np.array(fov_food + family_obs + health_obs + [agent.health / 200] + [reproduced] + [nr_genes]
-                               + [len(self.agents)] + [agent.killed])
+                               + [len(self.agents)] + [agent.killed] + [agent.ate_berry])
 
             if agent.age == 0:
                 agent.state = fov
@@ -312,16 +318,18 @@ class Environment(gym.Env):
     def _get_food(self, obj):
         """ Return 1 for food -1 for poison and 0 for everything else, 1 is returned if agent dies """
         if obj.value == self.entities.food:
-            return 1
+            return .5
+        if obj.value == self.entities.super_berry:
+            return 1.
         elif obj.value == self.entities.poison:
-            return -1
+            return -1.
         elif obj.value == self.entities.agent:
             if obj.health < 0:
-                return 1
+                return 1.
             else:
-                return 0
+                return 0.
         else:
-            return 0
+            return 0.
 
     def _get_family(self, obj, agent):
         """ Return 1 for family, -1 for non-family and 0 otherwise """
@@ -489,6 +497,10 @@ class Environment(gym.Env):
             agent.health = min(200, agent.health + 40)
         elif self.grid.grid[agent.i_target, agent.j_target].value == self.entities.poison:
             agent.health = min(200, agent.health - 40)
+        elif self.grid.grid[agent.i_target, agent.j_target].value == self.entities.super_berry:
+            agent.health = 200
+            agent.max_age = 80
+            agent.ate_berry = 1.
 
     def _update_agent_position(self, agent):
         """ Update position of an agent """

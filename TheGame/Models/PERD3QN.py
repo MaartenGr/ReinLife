@@ -138,6 +138,11 @@ class PERD3QNAgent:
             self.eval_net.load_state_dict(torch.load(load_model))
             self.eval_net.eval()
 
+            if self.training:
+                self.target_net.load_state_dict(torch.load(load_model))
+                self.target_net.eval()
+                self.optimizer = torch.optim.Adam(self.eval_net.parameters(), lr=learning_rate)
+
     def get_action(self, state, n_epi):
         if self.training:
             if n_epi > self.n_epi:

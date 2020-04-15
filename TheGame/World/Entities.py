@@ -34,6 +34,7 @@ class Agent:
         self.fitness = 0
         self.action = -1
         self.killed = 0
+        self.ate_berry = -1
 
         self.reward = None
         self.state = None
