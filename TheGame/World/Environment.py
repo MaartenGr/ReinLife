@@ -498,8 +498,8 @@ class Environment(gym.Env):
         elif self.grid.grid[agent.i_target, agent.j_target].value == self.entities.poison:
             agent.health = min(200, agent.health - 40)
         elif self.grid.grid[agent.i_target, agent.j_target].value == self.entities.super_berry:
-            agent.health = 200
-            agent.max_age = 80
+            agent.health = min(200, agent.health + 40)
+            agent.max_age = int(agent.max_age * 1.2)
             agent.ate_berry = 1.
 
     def _update_agent_position(self, agent):
