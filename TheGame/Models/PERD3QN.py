@@ -188,3 +188,8 @@ class PERD3QNAgent:
 
             if n_epi % self.soft_update_freq == 0:
                 self.target_net.load_state_dict(self.eval_net.state_dict())
+
+    def apply_gaussian_noise(self):
+        with torch.no_grad():
+            self.target_net.fc.weight.add_(torch.randn(self.target_net.fc.weight.size()))
+        self.target_net.load_state_dict(self.eval_net.state_dict())

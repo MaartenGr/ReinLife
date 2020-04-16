@@ -31,6 +31,7 @@ class Grid:
         assert i >= 0 and i < self.height
         assert j >= 0 and j < self.width
         self.grid[i, j] = entity((i, j), **kwargs)
+        return self.grid[i, j]
 
     def get_numpy(self, value=None):
         """ Get a numpy representation of the grid """
@@ -59,6 +60,9 @@ class Grid:
             i, j = indices[0][random_index], indices[1][random_index]
             if np.random.random() < p:
                 self.grid[i, j] = entity((i, j), **kwargs)
+                return self.grid[i, j]
+            else:
+                return None, None
         except ValueError:
             return None, None
 

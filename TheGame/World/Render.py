@@ -5,7 +5,7 @@ from TheGame.World.utils import EntityTypes
 
 
 class Visualize:
-    def __init__(self, width, height, grid_size, pastel=False):
+    def __init__(self, width, height, grid_size, pastel=False, families=True):
 
         # Track size
         self.width = width
@@ -14,16 +14,17 @@ class Visualize:
 
         # other
         self.entities = EntityTypes
+        self.families = families
 
         if pastel:
             self.colors = [tuple(generate_random_pastel()) for _ in range(100)]
+        elif self.families:
+            self.colors = [(0, 0, 255), (0, 255, 0), (255, 255, 0), (0, 255, 255), (255, 255, 255)]
         else:
             self.colors = [(255, 255, 255), (255, 0, 0), (0, 255, 0), (0, 0, 255), (255, 255, 0), (0, 255, 255),
                            (255, 0, 255),
                            (192, 192, 192), (128, 128, 128), (128, 0, 0), (128, 128, 0), (0, 128, 0), (128, 0, 128),
                            (0, 128, 128), (0, 0, 128)]
-
-        self.colors = [(0, 0, 255), (0, 255, 0), (255, 255, 0), (0, 255, 255), (255, 255, 255)]
 
         # Pygame related vars
         self.background = None
@@ -58,12 +59,13 @@ class Visualize:
     def _draw_agents(self, agents):
         for agent in agents:
             if not agent.dead:
-                # if agent.gen < len(self.colors):
-                #     color = self.colors[agent.gen]
-                # else:
-                #     color = self.colors[agent.gen % len(self.colors)]
-
-                color = self.colors[agent.gen]
+                if self.families:
+                    color = self.colors[agent.gen]
+                else:
+                    if agent.gen < len(self.colors):
+                        color = self.colors[agent.gen]
+                    else:
+                        color = self.colors[agent.gen % len(self.colors)]
 
                 # Body
                 pg.draw.rect(self.screen, color,

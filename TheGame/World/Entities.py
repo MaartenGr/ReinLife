@@ -72,3 +72,8 @@ class Agent:
         else:
             self.brain.learn(age=self.age, dead=self.dead, action=self.action, state=self.state, reward=self.reward,
                              state_prime=self.state_prime, done=self.done, **kwargs)
+
+    def scramble_brain(self):
+        if self.brain.method == "PERD3QN":
+            self.brain.apply_gaussian_noise()
+

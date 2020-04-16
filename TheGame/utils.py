@@ -19,7 +19,7 @@ def check_pygame_exit():
 
 class Results:
     def __init__(self, print_interval, interactive=False, save_visualization=False, google_colab=False,
-                 nr_gens=None):
+                 nr_gens=None, families=True):
 
         # Average within and between episodes
         self.nr_gens = nr_gens
@@ -52,6 +52,10 @@ class Results:
         self.interactive = interactive
         self.save_visualization = save_visualization
         self.google_colab = google_colab
+        self.families = families
+
+        if not self.families:
+            self.nr_genes = 1
 
         if interactive:
 
@@ -101,7 +105,8 @@ class Results:
         """ Track the average size of all populations """
         if agents:
             for gen in range(self.nr_gens):
-                actions = [agent.action for agent in agents if agent.gen == gen]
+                actions = [agent.action for agent in agents if (agent.gen == gen and self.families) or
+                           (not self.families)]
                 attacks = [action for action in actions if action >= 4]
                 if len(actions) == 0:
                     self.track_avg_nr_attacks[gen].append(-1)
@@ -124,7 +129,7 @@ class Results:
         """ Track the average size of all populations """
         if agents:
             for gen in range(self.nr_gens):
-                gens = [agent.gen for agent in agents if agent.gen == gen]
+                gens = [agent.gen for agent in agents if (agent.gen == gen and self.families) or (not self.families)]
                 if len(gens) == 0:
                     self.track_avg_population_size[gen].append(-1)
                 else:
@@ -138,7 +143,8 @@ class Results:
         """ Update the average fitness/reward of all entities """
         if agents:
             for gen in range(self.nr_gens):
-                fitness = [agent.reward for agent in agents if agent.gen == gen]
+                fitness = [agent.reward for agent in agents if (agent.gen == gen and self.families) or
+                           (not self.families)]
                 if len(fitness) == 0:
                     self.track_avg_population_fitness[gen].append(-1)
                 else:
@@ -151,7 +157,7 @@ class Results:
         """ Update the average age of all entities """
         if agents:
             for gen in range(self.nr_gens):
-                pop_age = [agent.age for agent in agents if agent.gen == gen]
+                pop_age = [agent.age for agent in agents if (agent.gen == gen and self.families) or (not self.families)]
                 if len(pop_age) == 0:
                     self.track_avg_population_age[gen].append(-1)
                 else:
@@ -165,7 +171,7 @@ class Results:
         if agents:
             for gen in range(self.nr_gens):
 
-                fitness = [agent.reward for agent in agents if agent.gen == gen]
+                fitness = [agent.reward for agent in agents if (agent.gen == gen and self.families) or (not self.families)]
                 if len(fitness) == 0:
                     self.track_avg_best_fitness[gen].append(-1)
                 else:
@@ -178,11 +184,13 @@ class Results:
         """ Update the best fitness of all entities """
         if agents:
             for gen in range(self.nr_gens):
-                ages = [agent.age for agent in agents if agent.gen == gen]
+                ages = [agent.age for agent in agents if (agent.gen == gen and self.families) or (not self.families)]
                 if len(ages) == 0:
                     self.track_avg_best_age[gen].append(-1)
                 else:
-                    self.track_avg_best_age[gen].append(max([agent.age for agent in agents if agent.gen == gen]))
+                    self.track_avg_best_age[gen].append(max([agent.age for agent in agents if (agent.gen == gen and
+                                                                                               self.families) or
+                                                             (not self.families)]))
         else:
             for gen in range(self.nr_gens):
                 self.track_avg_best_age[gen].append(-1)
@@ -192,7 +200,8 @@ class Results:
         """ Track the average size of all populations """
         if agents:
             for gen in range(self.nr_gens):
-                gens = len([agent.gen for agent in agents if agent.gen == gen])
+                gens = len([agent.gen for agent in agents if (agent.gen == gen and self.families) or
+                            (not self.families)])
                 if gens == 0:
                     self.track_avg_best_size[gen].append(-1)
                 else:

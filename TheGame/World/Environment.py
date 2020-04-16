@@ -13,11 +13,13 @@ from TheGame.World.Entities import Entity, Agent, Empty
 from TheGame.World.Grid import Grid
 from TheGame.World.utils import Actions, EntityTypes
 from TheGame.World.Render import Visualize
+from TheGame.utils import Results
 
 
 class Environment(gym.Env):
     def __init__(self, width=30, height=30, evolution=False, fps=20, brains=None,
-                 grid_size=16, max_agents=10, pastel=False, extended_fov=False):
+                 grid_size=16, max_agents=10, pastel=False, extended_fov=False, families=True,
+                 print_interval=True, interactive_results=False, google_colab=False, training=True):
 
         # Classes
         self.actions = Actions
@@ -37,9 +39,11 @@ class Environment(gym.Env):
         self.max_agents = max_agents
         self.max_gen = self.nr_agents
         self.evolution = evolution
+        self.families = families
         self.fps = fps
         self.pastel = pastel
         self.extended_fov = extended_fov
+        self.training = training
 
         if not brains:
             self.brains = [None for _ in range(self.nr_agents)]
@@ -60,7 +64,11 @@ class Environment(gym.Env):
                                             dtype=np.float)
 
         # Render
-        self.viz = Visualize(self.width, self.height, self.grid_size, self.pastel)
+        self.viz = Visualize(self.width, self.height, self.grid_size, self.pastel, families=self.families)
+
+        # Results tracker
+        self.results = Results(print_interval=print_interval, interactive=interactive_results,
+                               google_colab=google_colab, nr_gens=len(self.brains), families=self.families)
 
     def reset(self, is_render=False):
         """ Reset the environment to the beginning """
@@ -74,7 +82,11 @@ class Environment(gym.Env):
         self.agents = []
         for i in range(self.nr_agents):
             self._add_agent(random_loc=True, brain=self.brains[i], gen=i)
-        self.best_agents = [self.grid.get_entities(self.entities.agent)[0] for _ in range(5)]
+
+        if self.families:
+            self.best_agents = [self.grid.get_entities(self.entities.agent)[0] for _ in range(5)]
+        else:
+            self.best_agents = [copy.deepcopy(self.grid.get_entities(self.entities.agent)[0]) for _ in range(10)]
 
         # Add Good Food
         for i in range(self.width * self.height):
@@ -124,8 +136,15 @@ class Environment(gym.Env):
         """ Render the game using pygame """
         return self.viz.render(self.agents, self.grid, fps=fps)
 
-    def update_env(self):
+    def update_env(self, n_epi=0):
         """ Update the environment """
+        if self.training:
+            self.results.update_results(self.agents, n_epi, [agent.action for agent in self.agents],
+                                        [agent.reward for agent in self.agents])
+
+        if not self.families:
+            self._update_best_agents()
+
         self.agents = self.grid.get_entities(self.entities.agent)
         self._reproduce()
         self._remove_dead_agents()
@@ -235,16 +254,21 @@ class Environment(gym.Env):
     def _add_agent(self, coordinates=None, brain=None, gen=None, random_loc=False, p=1):
         """ Add agent, if random_loc then add at a random location with probability p """
         if random_loc:
-            self.grid.set_random(Agent, p=p, value=self.entities.agent, brain=brain, gen=gen)
+            return self.grid.set_random(Agent, p=p, value=self.entities.agent, brain=brain, gen=gen)
         else:
-            self.grid.set(coordinates[0], coordinates[1], Agent, value=self.entities.agent, brain=brain, gen=gen)
+            return self.grid.set(coordinates[0], coordinates[1], Agent, value=self.entities.agent, brain=brain, gen=gen)
 
     def _reproduce(self):
         """ Reproduce if old enough """
         for agent in self.agents:
             if not agent.dead and not agent.reproduced:
                 if len(self.agents) <= self.max_agents and random.random() > 0.95 and agent.age > 5:
-                    new_brain = self.brains[agent.gen]
+
+                    if self.families:
+                        new_brain = self.brains[agent.gen]
+                    else:
+                        new_brain = agent.brain
+
                     coordinates = self._get_empty_within_fov(agent)
                     if coordinates:
                         self._add_agent(coordinates=coordinates[random.randint(0, len(coordinates) - 1)],
@@ -255,9 +279,18 @@ class Environment(gym.Env):
     def _produce(self):
         """ Randomly produce new agent if too little agents are alive """
         if len(self.agents) <= self.max_agents + 1 and random.random() > 0.95:
-            gen = random.choice([x for x in range(self.nr_agents)])
-            brain = self.brains[gen]
-            self._add_agent(random_loc=True, brain=brain, gen=gen)
+
+            if self.families:
+                gen = random.choice([x for x in range(self.nr_agents)])
+                brain = self.brains[gen]
+                self._add_agent(random_loc=True, brain=brain, gen=gen)
+
+            else:
+                best_agent = random.choice(self.best_agents)
+                brain = copy.deepcopy(best_agent.brain)
+                self.max_gen += 1
+                agent = self._add_agent(random_loc=True, brain=brain, gen=self.max_gen)
+                agent.scramble_brain()
 
     def _remove_dead_agents(self):
         """ Remove dead agent from grid """
@@ -523,6 +556,10 @@ class Environment(gym.Env):
         """ Update best agents, replace weakest if a better is found """
         min_fitness_idx = int(np.argmin([agent.fitness for agent in self.best_agents]))
         min_fitness = self.best_agents[min_fitness_idx].fitness
-        for agent in self.agents:
-            if agent.fitness > min_fitness and agent not in self.best_agents:
-                self.best_agents[min_fitness_idx] = agent
+
+        if self.agents:
+            max_fitness_idx = int(np.argmax([agent.fitness for agent in self.agents]))
+            max_fitness = self.agents[max_fitness_idx].fitness
+
+            if self.agents[max_fitness_idx] not in self.best_agents and max_fitness > min_fitness:
+                self.best_agents[min_fitness_idx] = self.agents[max_fitness_idx]

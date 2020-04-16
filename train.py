@@ -1,7 +1,7 @@
 from TheGame.Models import A2C, D3QN, DRQN, DQN, PERDQN, PERD3QN, PPO
 from TheGame.Trainer import trainer
 
-max_epi = 20_000
+max_epi = 30_000
 brains = [PERD3QN(152, 8),
           D3QN(152, 8),
           DQN(152, max_epi=max_epi, learning_rate=0.0005),
@@ -15,4 +15,4 @@ brains = [PERD3QN(153, 8),
           PERD3QN(153, 8)]
 
 trainer(brains, max_epi=max_epi, print_interval=500, width=30, height=30, max_agents=100,
-        interactive=True, google_colab=False, render=False)
+        interactive_results=True, google_colab=False, render=False, families=False, training=True)
