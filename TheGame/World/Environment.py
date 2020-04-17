@@ -147,7 +147,6 @@ class Environment(gym.Env):
         self.agents = self.grid.get_entities(self.entities.agent)
         self._reproduce()
         self._produce()
-
         self._remove_dead_agents()
 
         obs, _ = self._get_obs()
