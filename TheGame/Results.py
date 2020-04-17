@@ -1,23 +1,9 @@
-import os
-import pygame
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
 
-GRID_COORD_MARGIN_SIZE = 0
-CELL_SIZE = 16
-BLACK = (255, 0, 0)
 
-
-def check_pygame_exit():
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            pygame.quit()
-            return False
-    return True
-
-
-class Results:
+class Tracker:
     def __init__(self, print_interval, interactive=False, save_visualization=False, google_colab=False,
                  nr_gens=None, families=True):
 

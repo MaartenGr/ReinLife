@@ -1,10 +1,10 @@
 from TheGame.Models import A2C, D3QN, DRQN, DQN, PERDQN, PERD3QN, PPO
 from TheGame.Trainer import trainer
 
-max_epi = 30_000
+n_episodes = 10_000
 brains = [PERD3QN(152, 8),
           D3QN(152, 8),
-          DQN(152, max_epi=max_epi, learning_rate=0.0005),
+          DQN(152, max_epi=n_episodes, learning_rate=0.0005),
           A2C(152, 8),
           PERDQN(152, 8),
           PPO(152, 8, learning_rate=0.0001),
@@ -14,5 +14,8 @@ brains = [PERD3QN(153, 8),
           PERD3QN(153, 8),
           PERD3QN(153, 8)]
 
-trainer(brains, max_epi=max_epi, print_interval=500, width=30, height=30, max_agents=100,
-        interactive_results=True, google_colab=False, render=False, families=False, training=True)
+trainer(brains, n_episodes=n_episodes, print_interval=500, width=30, height=30, max_agents=100,
+        visualize_results=True, google_colab=False, render=False, families=True, training=True)
+
+# To do:
+#       * Save the resulting brains in its own folder labelling the experiment

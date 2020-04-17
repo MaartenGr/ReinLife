@@ -60,20 +60,27 @@ class Agent:
         self.target_coordinates = [i, j]
 
     def learn(self, **kwargs):
-        if self.brain.method == "PPO":
-            self.brain.learn(age=self.age, dead=self.dead, action=self.action, state=self.state, reward=self.reward,
-                             state_prime=self.state_prime, done=self.done, prob=self.prob)
-        elif self.brain.method == "DRQN":
-            self.brain.learn(age=self.age, dead=self.dead, action=self.action, state=self.state, reward=self.reward,
-                             state_prime=self.state_prime, done=self.done, **kwargs)
-        elif self.brain.method in ["DQN", "A2C", "PERDQN"]:
-            self.brain.learn(age=self.age, dead=self.dead, action=self.action, state=self.state, reward=self.reward,
-                             state_prime=self.state_prime, done=self.done)
-        else:
-            self.brain.learn(age=self.age, dead=self.dead, action=self.action, state=self.state, reward=self.reward,
-                             state_prime=self.state_prime, done=self.done, **kwargs)
+        if self.age > 1:
+            if self.brain.method == "PPO":
+                self.brain.learn(age=self.age, dead=self.dead, action=self.action, state=self.state, reward=self.reward,
+                                 state_prime=self.state_prime, done=self.done, prob=self.prob)
+            elif self.brain.method == "DRQN":
+                self.brain.learn(age=self.age, dead=self.dead, action=self.action, state=self.state, reward=self.reward,
+                                 state_prime=self.state_prime, done=self.done, **kwargs)
+            elif self.brain.method in ["DQN", "A2C", "PERDQN"]:
+                self.brain.learn(age=self.age, dead=self.dead, action=self.action, state=self.state, reward=self.reward,
+                                 state_prime=self.state_prime, done=self.done)
+            else:
+                self.brain.learn(age=self.age, dead=self.dead, action=self.action, state=self.state, reward=self.reward,
+                                 state_prime=self.state_prime, done=self.done, **kwargs)
 
     def scramble_brain(self):
         if self.brain.method == "PERD3QN":
             self.brain.apply_gaussian_noise()
+
+    def get_action(self, n_epi):
+        if self.brain.method == "PPO":
+            self.action, self.prob = self.brain.get_action(self.state, n_epi)
+        else:
+            self.action = self.brain.get_action(self.state, n_epi)
 

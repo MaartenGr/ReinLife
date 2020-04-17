@@ -2,25 +2,75 @@ from TheGame import Environment
 from tqdm import tqdm
 
 
-def trainer(brains, max_epi, print_interval, interactive_results, google_colab, width, height, max_agents=100, render=False,
-            families=True, training=True):
+def trainer(brains, n_episodes=10_000, width=30, height=30, visualize_results=False, google_colab=False,
+            print_interval=500, max_agents=100, render=False, families=True, training=True):
+    """ Automatically trains the models for n_episodes
+
+    Parameters:
+    -----------
+    brains : list
+        Contains a list of brains defined as Agents by the TheGame.Models folder.
+
+    n_episodes : int, default 10_000
+        The number of epsiodes to run the training sequence.
+
+    width : int, default 30
+        The width of the environment.
+
+    height : int, default 30
+        The height of the environment.
+
+    visualize_results : boolean, default False
+        Whether to visualize the results interactively in matplotlib.
+
+    google_colab : boolean, default False
+        If you want to visualize your results interactively in google_colab, also set this parameter
+        to True as well as the one above.
+
+    print_interval : int, default 500
+        The interval at which to print and/or visualize results.
+
+    max_agents : int, default 100
+        The maximum number of agents can occupy the environment.
+
+    render : boolean, default False
+        Whether to render the environment in pygame whilst training.
+
+    families: boolean, default False
+        Whether you want a set number of families to be used. Each family has its own brain defined
+        by the models in the variable brains. The number of families cannot exceed the number of models
+        in the brains variable.
+
+    training : boolean, default True
+        Whether you want to train using the settings above or simply show the result.
+
+    Returns:
+    --------
+    env : gym.env
+        The resulting environment in which the status of the last episode is saved. Using this, you can save
+        the brains manually by accessing env.brains or env.best_agents.
+
+    """
+
     env = Environment(width=width, height=height, evolution=True, max_agents=max_agents, brains=brains, grid_size=24,
-                      families=families, print_interval=print_interval, interactive_results=interactive_results,
+                      families=families, print_interval=print_interval, interactive_results=visualize_results,
                       google_colab=google_colab, training=training)
     env.reset()
 
-    for n_epi in tqdm(range(max_epi)):
-        for agent in env.agents:
-            if agent.brain.method == "PPO":
-                agent.action, agent.prob = agent.brain.get_action(agent.state, n_epi)
-            else:
-                agent.action = agent.brain.get_action(agent.state, n_epi)
+    for n_epi in tqdm(range(n_episodes)):
 
+        # Get actions for each brain
+        for agent in env.agents:
+            agent.get_action(n_epi)
+
+        # Execute all actions
         env.step()
 
+        # Learn what the result is
         for agent in env.agents:
             agent.learn(n_epi=n_epi)
 
+        # Clean up environment, remove dead agents, reproduce, etc.
         env.update_env(n_epi)
 
         if render:

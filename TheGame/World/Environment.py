@@ -13,7 +13,7 @@ from TheGame.World.Entities import Entity, Agent, Empty
 from TheGame.World.Grid import Grid
 from TheGame.World.utils import Actions, EntityTypes
 from TheGame.World.Render import Visualize
-from TheGame.utils import Results
+from TheGame.Results import Tracker
 
 
 class Environment(gym.Env):
@@ -67,7 +67,7 @@ class Environment(gym.Env):
         self.viz = Visualize(self.width, self.height, self.grid_size, self.pastel, families=self.families)
 
         # Results tracker
-        self.results = Results(print_interval=print_interval, interactive=interactive_results,
+        self.results = Tracker(print_interval=print_interval, interactive=interactive_results,
                                google_colab=google_colab, nr_gens=len(self.brains), families=self.families)
 
     def reset(self, is_render=False):
@@ -112,7 +112,7 @@ class Environment(gym.Env):
             self.previous_grid = self.grid.copy()
         self.current_step += 1
         self._act()
-        rewards, dones, infos = self._get_rewards()
+        self._get_rewards()
 
         # Add food
         if len(np.where(self.grid.get_numpy() == self.entities.food)[0]) <= ((self.width * self.height) / 10):
@@ -130,7 +130,6 @@ class Environment(gym.Env):
             self.grid.set_random(Entity, p=1, value=self.entities.super_berry)
 
         obs, _ = self._get_obs()
-        # self._update_best_agents()
 
     def render(self, fps=10):
         """ Render the game using pygame """
@@ -147,8 +146,10 @@ class Environment(gym.Env):
 
         self.agents = self.grid.get_entities(self.entities.agent)
         self._reproduce()
-        self._remove_dead_agents()
         self._produce()
+
+        self._remove_dead_agents()
+
         obs, _ = self._get_obs()
 
         for agent in self.agents:
@@ -191,9 +192,6 @@ class Environment(gym.Env):
 
     def _get_rewards(self):
         """ Extract reward and whether the game has finished """
-        rewards = [0 for _ in range(len(self.agents))]
-        dones = [False for _ in self.agents]
-        infos = ["" for _ in self.agents]
 
         # Update death status for all agents
         for agent in self.agents:
@@ -232,12 +230,6 @@ class Environment(gym.Env):
             agent.reward = reward
             agent.done = done
             agent.info = info
-
-            dones[0] = done
-            infos[0] = info
-            rewards[0] = reward
-
-        return rewards, dones, infos
 
     def _act(self):
         """ Make the agents act and reduce its health with each step """

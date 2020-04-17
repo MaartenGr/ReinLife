@@ -8,6 +8,27 @@ follows the following style:
 - Removed
 
 
+## [0.3] - 2020-XX-XX
+
+### Added
+- Added PERD3QN and D3QN
+- Added True evolution where each family has a single brain, but any amount
+of families can be created. Any new entity will have its brain "scrambled" to mimic
+mutation when evolving
+- Updated results such that it also works for any amount of families
+
+### Changed
+- Created N families such that every family has a single brain that is trained independently
+- Updated training structure to make training easier 
+- All reward, states, etc. are now preserved in the Agent class
+- Updated model structure such that all models have similar structure
+
+### Fixed
+- Updated folder structure
+
+### Removed
+- Removed older models that were not used or had significant bugs
+
 ## [0.2.4] - 2020-04-07
 
 ### Added
