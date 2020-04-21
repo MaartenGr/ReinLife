@@ -1,5 +1,5 @@
 import numpy as np
-from TheGame.World.Entities import Empty
+from TheGame.World.Entities import Entity
 from TheGame.World.utils import EntityTypes
 from copy import deepcopy
 
@@ -21,7 +21,7 @@ class Grid:
 
         for i in range(self.height):
             for j in range(self.width):
-                self.grid[i, j] = Empty((i, j), value=self.entity_type.empty)
+                self.grid[i, j] = Entity((i, j), entity_type=self.entity_type.empty)
 
     def copy(self):
         return deepcopy(self)
@@ -33,12 +33,12 @@ class Grid:
         self.grid[i, j] = entity((i, j), **kwargs)
         return self.grid[i, j]
 
-    def get_numpy(self, value=None):
+    def get_numpy(self, entity_type=None):
         """ Get a numpy representation of the grid """
-        if value:
-            vectorized = np.vectorize(lambda obj: obj.value == value)
+        if entity_type:
+            vectorized = np.vectorize(lambda obj: obj.entity_type == entity_type)
         else:
-            vectorized = np.vectorize(lambda obj: obj.value)
+            vectorized = np.vectorize(lambda obj: obj.entity_type)
         return vectorized(self.grid)
 
     def get_entities(self, entity_type):
@@ -49,6 +49,9 @@ class Grid:
         entities = [self.grid[coordinate] for coordinate in coordinates]
 
         return entities
+
+    def is_entity_type(self, i, j, entity_type):
+        return self.grid[i, j].entity_type == entity_type
 
     def set_random(self, entity, p, **kwargs):
         """ Set an entity at a random location iff there is space """

@@ -1,22 +1,11 @@
-class Empty:
-    """ An empty Tile """
-    def __init__(self, coordinates, value):
-        self.i, self.j = coordinates
-        self.value = value
-        self.coordinates = list(coordinates)
+from TheGame.World.utils import EntityTypes
+
+entities = EntityTypes
 
 
 class Entity:
     """ An Entity """
-    def __init__(self, coordinates, value):
-        self.i, self.j = coordinates
-        self.value = value
-        self.coordinates = list(coordinates)
-
-
-class Agent:
-    """ An Agent with several trackers and movement options """
-    def __init__(self, coordinates, value, brain=None, gen=None):
+    def __init__(self, coordinates, entity_type):
 
         # Current coordinates
         self.i, self.j = coordinates
@@ -25,10 +14,57 @@ class Agent:
         # Coordinates of target location
         self.i_target, self.j_target = None, None
         self.target_coordinates = list(coordinates)
+        self.entity_type = entity_type
+
+    def move(self):
+        """ Move to target location """
+        self.i = self.i_target
+        self.j = self.j_target
+        self.coordinates = [self.i, self.j]
+
+    def update_target_location(self, i, j):
+        """ Update coordinates of target location """
+        self.i_target = i
+        self.j_target = j
+        self.target_coordinates = [i, j]
+
+
+class Empty(Entity):
+    """ An Agent with several trackers and movement options """
+    def __init__(self, coordinates):
+        super().__init__(coordinates, entities.empty)
+        self.nutrition = 40
+
+
+class Food(Entity):
+    """ An Agent with several trackers and movement options """
+    def __init__(self, coordinates):
+        super().__init__(coordinates, entities.food)
+        self.nutrition = 40
+
+
+class Poison(Entity):
+    """ An Agent with several trackers and movement options """
+    def __init__(self, coordinates):
+        super().__init__(coordinates, entities.poison)
+        self.nutrition = -40
+
+
+class SuperFood(Entity):
+    """ An Agent with several trackers and movement options """
+    def __init__(self, coordinates):
+        super().__init__(coordinates, entities.super_food)
+        self.nutrition = 40
+        self.age_multiplier = 1.2
+
+
+class Agent(Entity):
+    """ An Agent with several trackers and movement options """
+    def __init__(self, coordinates, entity_type, brain=None, gen=None):
+        super().__init__(coordinates, entity_type)
 
         # Agent-based stats
         self.health = 200
-        self.value = value
         self.age = 0
         self.max_age = 50
         self.brain = brain
@@ -48,17 +84,20 @@ class Agent:
         self.info = None
         self.prob = None
 
-    def move(self):
-        """ Move to target location """
-        self.i = self.i_target
-        self.j = self.j_target
-        self.coordinates = [self.i, self.j]
+    def execute_attack(self):
+        """ The agent executes an attack """
+        self.health = min(200, self.health + 100)
+        self.killed = 1
 
-    def target_location(self, i, j):
-        """ Update coordinates of target location """
-        self.i_target = i
-        self.j_target = j
-        self.target_coordinates = [i, j]
+    def is_attacked(self):
+        """ The agent is attacked """
+        self.health = 0
+
+    def update_rl_stats(self, reward, done, info):
+        self.fitness += reward
+        self.reward = reward
+        self.done = done
+        self.info = info
 
     def learn(self, **kwargs):
         if self.age > 1:
@@ -84,4 +123,3 @@ class Agent:
             self.action, self.prob = self.brain.get_action(self.state, n_epi)
         else:
             self.action = self.brain.get_action(self.state, n_epi)
-

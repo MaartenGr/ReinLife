@@ -9,7 +9,7 @@ main_brains = [PERD3QN(153, 8, load_model="Brains/PERD3QN/model_50000_991.pt", t
                PERD3QN(153, 8, load_model="Brains/PERD3QN/model_50000_991.pt", training=False)]
 
 env = Environment(width=30, height=30, grid_size=24, evolution=True, max_agents=150,
-                  pastel=False, extended_fov=False, brains=main_brains, training=False, families=True)
+                  pastel=False, brains=main_brains, training=False, families=True)
 s = env.reset()
 
 while True:

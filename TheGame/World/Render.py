@@ -114,7 +114,7 @@ class Visualize:
                                                   self.grid_size - int(self.grid_size/2.5)*2,
                                                   self.grid_size - int(self.grid_size/2.5)*2), 0)
 
-        berry = grid.get_entities(self.entities.super_berry)
+        berry = grid.get_entities(self.entities.super_food)
         for item in berry:
             pg.draw.rect(self.screen, (255, 0, 0), ((item.j * self.grid_size) + int(self.grid_size/2.5),
                                                   (item.i * self.grid_size) + int(self.grid_size/2.5),

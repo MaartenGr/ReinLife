@@ -23,4 +23,4 @@ class EntityTypes(IntEnum):
     poison = 2
     agent = 3
     kin = 4
-    super_berry = 5
+    super_food = 5

@@ -15,7 +15,8 @@ brains = [PERD3QN(153, 8),
           PERD3QN(153, 8)]
 
 trainer(brains, n_episodes=n_episodes, print_interval=500, width=30, height=30, max_agents=100,
-        visualize_results=True, google_colab=False, render=False, families=True, training=True)
+        visualize_results=True, google_colab=False, render=True, families=True, training=True)
 
 # To do:
 #       * Save the resulting brains in its own folder labelling the experiment
+#       * Save visualization

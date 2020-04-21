@@ -1,3 +1,6 @@
+![](images/logo.png)
+
+
 # The Game
 
 The purpose of this repository is to explore different methods for creating Artificial Life.
@@ -181,3 +184,8 @@ which should be within an entities fov
 
 NOTE: The environment needs to be at least 7x7 otherwise it gives issues with
 the fov. 
+
+
+<!---
+Font logo: https://www.1001fonts.com/fff-forward-font.html
+-->
