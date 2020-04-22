@@ -1,5 +1,4 @@
 # Native
-import os
 import random
 import copy
 
@@ -12,9 +11,9 @@ from gym import spaces
 from TheGame.World.Entities import Agent, Empty, Food, Poison, SuperFood
 from TheGame.World.Grid import Grid
 from TheGame.World.utils import Actions, EntityTypes
-from TheGame.World.Render import Visualize
-from TheGame.Results import Tracker
-from TheGame.Saver import Saver
+from TheGame.Helpers.Render import Visualize
+from TheGame.Helpers.Tracker import Tracker
+from TheGame.Helpers.Saver import Saver
 
 
 class Environment(gym.Env):
@@ -66,7 +65,7 @@ class Environment(gym.Env):
         self.viz = Visualize(self.width, self.height, grid_size, pastel, families=self.families)
 
         # Results tracker
-        self.results = Tracker(print_interval=print_interval, interactive=interactive_results,
+        self.tracker = Tracker(print_interval=print_interval, interactive=interactive_results,
                                google_colab=google_colab, nr_gens=len(self.brains), families=self.families)
 
     def reset(self, is_render=False):
@@ -132,8 +131,7 @@ class Environment(gym.Env):
     def update_env(self, n_epi=0):
         """ Update the environment """
         if self.training:
-            self.results.update_results(self.agents, n_epi, [agent.action for agent in self.agents],
-                                        [agent.reward for agent in self.agents])
+            self.tracker.update_results(self.agents, n_epi)
 
         if not self.families:
             self._update_best_agents()
@@ -202,7 +200,7 @@ class Environment(gym.Env):
         for agent in self.agents:
             agent.health = min(200, agent.health - 10)
             agent.age = min(agent.max_age, agent.age + 1)
-            agent.killed = 0
+            agent.reset_killed()
 
         self._attack()  # To do: first attack, then move!
         self._prepare_movement()
@@ -444,6 +442,11 @@ class Environment(gym.Env):
                 if target.entity_type == self.entities.agent:
                     target.is_attacked()
                     agent.execute_attack()
+
+                    if target.gen == agent.gen:
+                        agent.inter_killed = 1
+                    else:
+                        agent.intra_killed = 1
 
     def _eat(self, agent):
         """ Eat food """

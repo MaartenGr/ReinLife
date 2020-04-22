@@ -74,6 +74,8 @@ class Agent(Entity):
         self.fitness = 0
         self.action = -1
         self.killed = 0
+        self.inter_killed = 0
+        self.intra_killed = 0
         self.ate_berry = -1
         self.dead = False
 
@@ -84,6 +86,11 @@ class Agent(Entity):
         self.done = False
         self.info = None
         self.prob = None
+
+    def reset_killed(self):
+        self.killed = 0
+        self.inter_killed = 0
+        self.intra_killed = 0
 
     def execute_attack(self):
         """ The agent executes an attack """

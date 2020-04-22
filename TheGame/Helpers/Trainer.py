@@ -57,7 +57,7 @@ def trainer(brains, n_episodes=10_000, width=30, height=30, visualize_results=Fa
                       google_colab=google_colab, training=training)
     env.reset()
 
-    for n_epi in tqdm(range(n_episodes)):
+    for n_epi in tqdm(range(n_episodes+1)):
 
         # Get actions for each brain
         for agent in env.agents:
@@ -66,7 +66,7 @@ def trainer(brains, n_episodes=10_000, width=30, height=30, visualize_results=Fa
         # Execute all actions
         env.step()
 
-        # Learn what the result is
+        # Learn based on the result
         for agent in env.agents:
             agent.learn(n_epi=n_epi)
 

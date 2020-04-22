@@ -1,4 +1,5 @@
 import os
+import json
 from datetime import date
 import numpy as np
 
@@ -40,11 +41,14 @@ class Saver:
 
     def save(self, agents, results=None):
         """ Save brains and create directories if neccesary """
-        directory_paths, agent_paths = self._get_paths(agents)
+        directory_paths, agent_paths, experiment_path = self._get_paths(agents)
         self._create_directories(directory_paths)
 
         for agent in agents:
             agent.save_brain(agent_paths[agent])
+
+        with open(experiment_path + "\\" + "results.json", "w") as f:
+            json.dump(results, f, indent=4)
 
         print("################")
         print("Save Successful!")
@@ -70,7 +74,7 @@ class Saver:
                 agents_paths[self.get_key(duplicate, agents_paths)] = duplicate[:-1] + str(count+1)
 
         all_paths = [self.main_folder] + [experiment_path] + model_paths
-        return all_paths, agents_paths
+        return all_paths, agents_paths, experiment_path
 
     def _create_directories(self, all_paths):
         """ Create directories if neccesary and print which were created """
