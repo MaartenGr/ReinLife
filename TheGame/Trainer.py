@@ -3,7 +3,7 @@ from tqdm import tqdm
 
 
 def trainer(brains, n_episodes=10_000, width=30, height=30, visualize_results=False, google_colab=False,
-            print_interval=500, max_agents=100, render=False, families=True, training=True):
+            print_interval=500, max_agents=100, render=False, families=True, training=True, save=True):
     """ Automatically trains the models for n_episodes
 
     Parameters:
@@ -75,6 +75,9 @@ def trainer(brains, n_episodes=10_000, width=30, height=30, visualize_results=Fa
 
         if render:
             env.render(fps=120)
+
+    if save:
+        env.save_results()
 
     return env
 

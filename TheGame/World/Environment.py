@@ -14,12 +14,14 @@ from TheGame.World.Grid import Grid
 from TheGame.World.utils import Actions, EntityTypes
 from TheGame.World.Render import Visualize
 from TheGame.Results import Tracker
+from TheGame.Saver import Saver
 
 
 class Environment(gym.Env):
     def __init__(self, width=30, height=30, evolution=False, brains=None,
                  grid_size=16, max_agents=10, pastel=False, families=True,
-                 print_interval=True, interactive_results=False, google_colab=False, training=True):
+                 print_interval=True, interactive_results=False, google_colab=False, training=True,
+                 save=False, save_path=None):
 
         # Classes
         self.actions = Actions
@@ -38,6 +40,8 @@ class Environment(gym.Env):
         self.evolution = evolution
         self.families = families
 
+        self.save = save
+        self.save_path = save_path
         self.training = training
 
         if not brains:
@@ -146,38 +150,13 @@ class Environment(gym.Env):
 
         return obs
 
-    def save_best_brain(self, n_epi):
-        """ Save the best brain for further use """
-        models = os.listdir(f'Brains/{self.best_agents[0].brain.method}')
-        if len(models) != 0:
-            index = max([int(x.split(".")[0][-1]) for x in models]) + 1
+    def save_results(self):
+        saver = Saver('Experiments')
+
+        if self.families:
+            saver.save([Agent(brain=brain) for brain in self.brains])
         else:
-            index = 0
-
-        best_agent = random.choice(self.best_agents)
-
-        if best_agent.brain.method == "A2C":
-            best_agent.brain.actor.save_weights(f"Brains/{best_agent.brain.method}/"
-                                                f"model_{n_epi}_{index}.h5")
-
-        elif best_agent.brain.method == "DQN":
-            import torch
-            torch.save(best_agent.brain.agent.state_dict(), f"Brains/{best_agent.brain.method}/"
-            f"model_{n_epi}_{index}.pt")
-        elif best_agent.brain.method == "PERDQN":
-            import torch
-            torch.save(best_agent.brain.model.state_dict(), f"Brains/{best_agent.brain.method}/"
-            f"model_{n_epi}_{index}.pt")
-
-        elif best_agent.brain.method == "DRQN":
-            import torch
-            torch.save(best_agent.brain.eval_net.state_dict(), f"Brains/{best_agent.brain.method}/"
-            f"model_{n_epi}_{index}.pt")
-
-        elif best_agent.brain.method == "PPO":
-            import torch
-            torch.save(best_agent.brain.agent.state_dict(), f"Brains/{best_agent.brain.method}/"
-            f"model_{n_epi}_{index}.pt")
+            saver.save(self.best_agents)
 
     def _get_rewards(self):
         """ Extract reward and whether the game has finished """

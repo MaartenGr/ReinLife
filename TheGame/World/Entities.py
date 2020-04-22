@@ -1,3 +1,4 @@
+import os
 from TheGame.World.utils import EntityTypes
 
 entities = EntityTypes
@@ -60,7 +61,7 @@ class SuperFood(Entity):
 
 class Agent(Entity):
     """ An Agent with several trackers and movement options """
-    def __init__(self, coordinates, entity_type, brain=None, gen=None):
+    def __init__(self, coordinates=(None, None), entity_type=None, brain=None, gen=None):
         super().__init__(coordinates, entity_type)
 
         # Agent-based stats
@@ -123,3 +124,27 @@ class Agent(Entity):
             self.action, self.prob = self.brain.get_action(self.state, n_epi)
         else:
             self.action = self.brain.get_action(self.state, n_epi)
+
+    def save_brain(self, path):
+        """ Save the best brain for further use """
+        if self.brain.method == "A2C":
+            self.brain.actor.save_weights(f"{path}.h5")
+
+        elif self.brain.method == "DQN":
+            import torch
+            torch.save(self.brain.agent.state_dict(), f"{path}.pt")
+
+        elif self.brain.method == "PERDQN":
+            import torch
+            torch.save(self.brain.model.state_dict(), f"{path}.pt")
+
+        elif self.brain.method in ["PERD3QN", "DRQN", "D3QN"]:
+            import torch
+            torch.save(self.brain.eval_net.state_dict(), f"{path}.pt")
+
+        elif self.brain.method == "PPO":
+            import torch
+            torch.save(self.brain.agent.state_dict(), f"{path}.pt")
+
+
+

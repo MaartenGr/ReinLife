@@ -7,7 +7,7 @@ from collections import deque
 
 
 class DRQNAgent:
-    def __init__(self, observation_dim=152, learning_rate=1e-3, capacity=10000, epsilon_init=0.9, gamma=0.99,
+    def __init__(self, observation_dim=153, learning_rate=1e-3, capacity=10000, epsilon_init=0.9, gamma=0.99,
                  soft_update_freq=100, load_model=False, training=True):
         self.observation_dim = observation_dim
         self.action_dim = 8
