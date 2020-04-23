@@ -1,8 +1,0 @@
-{
-    "print interval": 100,
-    "width": 30,
-    "height": 30,
-    "evolution": true,
-    "max agents": 100,
-    "families": true
-}

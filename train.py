@@ -19,4 +19,6 @@ trainer(brains, n_episodes=n_episodes, print_interval=300, width=30, height=30, 
 
 # To do:
 #       * Save visualization
+#       * Save model parameters
 #       * Requirements
+
