@@ -91,6 +91,8 @@ class Tracker:
 
                 self.fig.tight_layout(pad=3.0)
                 plt.show()
+        else:
+            self.fig = None
 
     def update_results(self, agents, n_epi):
         self._track_results(agents)
