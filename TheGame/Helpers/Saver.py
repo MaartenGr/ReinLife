@@ -2,6 +2,7 @@ import os
 import json
 from datetime import date
 import numpy as np
+import inspect
 
 
 class Saver:
@@ -61,9 +62,27 @@ class Saver:
         if fig:
             fig.savefig(experiment_path + self.separator + "results.png", dpi=300)
 
+        self._save_params(agents, agent_paths)
+
         print("################")
         print("Save Successful!")
         print("################")
+
+    def _save_params(self, agents, agent_paths):
+        parameters = {agent: {} for agent in agents}
+
+        # Extract parameters
+        for agent in agents:
+            params = inspect.getmembers(agent.brain, lambda a: not (inspect.isroutine(a)))
+            for name, val in params:
+                if type(val) in [float, int, bool, str]:
+                    parameters[agent][name] = val
+
+        # Save parameters
+        for agent in agents:
+            path = agent_paths[agent].replace("brain", "parameters") + ".json"
+            with open(path, "w") as f:
+                json.dump(parameters[agent], f, indent=4)
 
     def _get_paths(self, agents, family):
         """ Get all paths for creating directories and paths for agents' brains """
