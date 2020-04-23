@@ -39,26 +39,27 @@ class Saver:
         cwd = os.getcwd()
         self.main_folder = cwd + "\\" + main_folder
 
-    def save(self, agents, family, results):
+    def save(self, agents, family, results, settings, fig):
         """ Save brains and create directories if neccesary """
-        directory_paths, agent_paths, experiment_path = self._get_paths(agents)
+        directory_paths, agent_paths, experiment_path = self._get_paths(agents, family)
         self._create_directories(directory_paths)
 
-        if family:
-            for agent in agents:
-                agent.save_brain(agent_paths[agent] + "_gen_" + str(agent.gen))
-        else:
-            for agent in agents:
-                agent.save_brain(agent_paths[agent])
+        for agent in agents:
+            agent.save_brain(agent_paths[agent])
 
         with open(experiment_path + "\\" + "results.json", "w") as f:
             json.dump(results, f, indent=4)
+
+        with open(experiment_path + "\\" + "settings.json", "w") as f:
+            json.dump(settings, f, indent=4)
+
+        fig.savefig(experiment_path + "\\" + "results.png", dpi=300)
 
         print("################")
         print("Save Successful!")
         print("################")
 
-    def _get_paths(self, agents):
+    def _get_paths(self, agents, family):
         """ Get all paths for creating directories and paths for agents' brains """
         # Get experiment folder path and increment if one already exists executed on the same day
         today = str(date.today())
@@ -71,13 +72,18 @@ class Saver:
         # Get path for each model in the experiment directory
         model_paths = list(set([experiment_path + "\\" + agent.brain.method for agent in agents]))
 
+        if family:
+            agents_paths = {agent: experiment_path + "\\" + agent.brain.method + "\\" + "brain_gen_" + str(agent.gen)
+                            for agent in agents}
+
         # If agents have the same model (i.e., "duplicates"), then increment their directory number
-        agents_paths = {agent: experiment_path + "\\" + agent.brain.method + "\\" + "brain_1" for agent in agents}
-        vals, count = np.unique([val for val in agents_paths.values()], return_counts=True)
-        duplicates = {x[0]: y[0] for x, y in zip(vals[np.argwhere(count > 1)], count[np.argwhere(count > 1)])}
-        for duplicate in duplicates.keys():
-            for count in range(duplicates[duplicate]):
-                agents_paths[self.get_key(duplicate, agents_paths)] = duplicate[:-1] + str(count+1)
+        else:
+            agents_paths = {agent: experiment_path + "\\" + agent.brain.method + "\\" + "brain_1" for agent in agents}
+            vals, count = np.unique([val for val in agents_paths.values()], return_counts=True)
+            duplicates = {x[0]: y[0] for x, y in zip(vals[np.argwhere(count > 1)], count[np.argwhere(count > 1)])}
+            for duplicate in duplicates.keys():
+                for count in range(duplicates[duplicate]):
+                    agents_paths[self.get_key(duplicate, agents_paths)] = duplicate[:-1] + str(count+1)
 
         all_paths = [self.main_folder] + [experiment_path] + model_paths
         return all_paths, agents_paths, experiment_path

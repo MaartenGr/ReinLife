@@ -4,7 +4,8 @@ import matplotlib
 
 
 class Tracker:
-    def __init__(self, print_interval, interactive=False, google_colab=False, nr_gens=None, families=True):
+    def __init__(self, print_interval, interactive=False, google_colab=False, nr_gens=None, families=True,
+                 brains=None):
         self.nr_gens = nr_gens
 
         # Tracks results each step
@@ -36,9 +37,11 @@ class Tracker:
         self.interactive = interactive
         self.google_colab = google_colab
         self.families = families
+        self.colors = ["#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7", "#000000"]
+        self.first_run = True
 
         if not self.families:
-            self.nr_genes = 1
+            self.nr_gens = 1
 
         if interactive:
             columns = 3
@@ -48,20 +51,46 @@ class Tracker:
                 self.grid = widgets.Grid(columns, columns)
             else:
                 plt.ion()
-                self.fig, self.ax = plt.subplots(columns, columns, sharex=True)
+                self.fig, self.ax = plt.subplots(columns, columns, figsize=(14, 10))
 
                 for i, _ in enumerate(self.variables_to_plot):
                     for k, variable in enumerate(self.variables_to_plot[i]):
                         if variable:
-                            self.ax[i][k].set_title(variable, fontsize=8)
-                            self.ax[i][k].set_xlabel('', fontsize=8)
-                            self.ax[i][k].tick_params(axis='both', which='major', labelsize=6)
-                        else:
-                            self.ax[i][k].set_title("XXX", fontsize=8)
-                            self.ax[i][k].set_xlabel('Nr Episodes', fontsize=8)
-                            self.ax[i][k].tick_params(axis='both', which='major', labelsize=6)
 
-                        plt.show(block=False)
+                            # Basic settings
+                            self.ax[i][k].set_title(variable, fontsize=11)
+                            self.ax[i][k].set_xlabel('Nr Episodes', fontsize=8)
+                            self.ax[i][k].tick_params(axis='both', which='major', labelsize=7)
+
+                            # Dark thick border
+                            self.ax[i][k].spines['bottom'].set_linewidth('1.5')
+                            self.ax[i][k].spines['left'].set_linewidth('1.5')
+
+                            # Light border
+                            self.ax[i][k].spines['top'].set_linewidth('1.5')
+                            self.ax[i][k].spines['top'].set_color('#EEEEEE')
+                            self.ax[i][k].spines['right'].set_linewidth('1.5')
+                            self.ax[i][k].spines['right'].set_color('#EEEEEE')
+
+                            # Grids
+                            self.ax[i][k].grid(which='major', color='#EEEEEE', linestyle='-', linewidth=.5)
+                            self.ax[i][k].minorticks_on()
+                            self.ax[i][k].grid(which='minor', color='#EEEEEE', linestyle='--', linewidth=.5)
+
+                        else:
+                            if families:
+                                for gen in range(nr_gens):
+                                    label = f"{brains[gen].method}: Gen {gen}"
+                                    self.ax[i][k].plot([], [], label=label, color=self.colors[gen])
+                            else:
+                                self.ax[i][k].plot([], [], label="", color=self.colors[0])
+
+                            self.ax[i][k].set_title("Legend", fontsize=12)
+                            self.ax[i][k].legend(loc='upper center', frameon=False)
+                            self.ax[i][k].axis('off')
+
+                self.fig.tight_layout(pad=3.0)
+                plt.show()
 
     def update_results(self, agents, n_epi):
         self._track_results(agents)
@@ -203,10 +232,20 @@ class Tracker:
             for k, variable in enumerate(self.variables_to_plot[i]):
                 if variable:
                     if type(self.results[variable]) == dict:
+
+                        if not self.first_run:
+                            for gen in range(self.nr_gens):
+                                self.ax[i][k].lines[0].remove()
+
                         for gen in range(self.nr_gens):
-                            self.ax[i][k].plot(x, self.results[variable][gen], label=gen)
+                            self.ax[i][k].plot(x, self.results[variable][gen], label=gen, color=self.colors[gen])
                     else:
-                        self.ax[i][k].plot(x, self.results[variable])
+                        if not self.first_run:
+                            self.ax[i][k].lines[0].remove()
+                        self.ax[i][k].plot(x, self.results[variable], color="#757575")
+
+        if self.first_run:
+            self.first_run = False
 
         plt.draw()
         mypause(0.0001)

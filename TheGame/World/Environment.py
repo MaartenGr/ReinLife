@@ -66,7 +66,8 @@ class Environment(gym.Env):
 
         # Results tracker
         self.tracker = Tracker(print_interval=print_interval, interactive=interactive_results,
-                               google_colab=google_colab, nr_gens=len(self.brains), families=self.families)
+                               google_colab=google_colab, nr_gens=len(self.brains), families=self.families,
+                               brains=brains)
 
     def reset(self, is_render=False):
         """ Reset the environment to the beginning """
@@ -150,12 +151,18 @@ class Environment(gym.Env):
 
     def save_results(self):
         saver = Saver('Experiments')
+        settings = {"print interval": self.tracker.print_interval,
+                    "width": self.width,
+                    "height": self.height,
+                    "evolution": self.evolution,
+                    "max agents": self.max_agents,
+                    "families": self.families}
 
         if self.families:
             saver.save([Agent(gen=gen, brain=brain) for gen, brain in enumerate(self.brains)], self.families,
-                       self.tracker.results)
+                       self.tracker.results, settings, self.tracker.fig)
         else:
-            saver.save(self.best_agents, self.families, self.tracker.results)
+            saver.save(self.best_agents, self.families, self.tracker.results, settings, self.tracker.fig)
 
     def _get_rewards(self):
         """ Extract reward and whether the game has finished """
