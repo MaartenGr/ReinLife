@@ -1,5 +1,5 @@
 from TheGame.Models import PERD3QN
-from TheGame.Helpers.Trainer import trainer
+from TheGame.Helpers import trainer
 
 n_episodes = 10_000
 # brains = [PERD3QN(153, 8),

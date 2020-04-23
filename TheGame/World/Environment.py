@@ -11,9 +11,9 @@ from gym import spaces
 from TheGame.World.Entities import Agent, Empty, Food, Poison, SuperFood
 from TheGame.World.Grid import Grid
 from TheGame.World.utils import Actions, EntityTypes
-from TheGame.Helpers.Render import Visualize
 from TheGame.Helpers.Tracker import Tracker
 from TheGame.Helpers.Saver import Saver
+from TheGame.Helpers.Render import Visualize
 
 
 class Environment(gym.Env):
@@ -152,9 +152,10 @@ class Environment(gym.Env):
         saver = Saver('Experiments')
 
         if self.families:
-            saver.save([Agent(brain=brain) for brain in self.brains])
+            saver.save([Agent(gen=gen, brain=brain) for gen, brain in enumerate(self.brains)], self.families,
+                       self.tracker.results)
         else:
-            saver.save(self.best_agents)
+            saver.save(self.best_agents, self.families, self.tracker.results)
 
     def _get_rewards(self):
         """ Extract reward and whether the game has finished """

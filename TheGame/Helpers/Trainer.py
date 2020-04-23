@@ -1,4 +1,4 @@
-from TheGame import Environment
+from TheGame.World.Environment import Environment
 from tqdm import tqdm
 
 

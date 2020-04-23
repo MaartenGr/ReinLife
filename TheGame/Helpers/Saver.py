@@ -39,13 +39,17 @@ class Saver:
         cwd = os.getcwd()
         self.main_folder = cwd + "\\" + main_folder
 
-    def save(self, agents, results=None):
+    def save(self, agents, family, results):
         """ Save brains and create directories if neccesary """
         directory_paths, agent_paths, experiment_path = self._get_paths(agents)
         self._create_directories(directory_paths)
 
-        for agent in agents:
-            agent.save_brain(agent_paths[agent])
+        if family:
+            for agent in agents:
+                agent.save_brain(agent_paths[agent] + "_gen_" + str(agent.gen))
+        else:
+            for agent in agents:
+                agent.save_brain(agent_paths[agent])
 
         with open(experiment_path + "\\" + "results.json", "w") as f:
             json.dump(results, f, indent=4)
@@ -57,9 +61,11 @@ class Saver:
     def _get_paths(self, agents):
         """ Get all paths for creating directories and paths for agents' brains """
         # Get experiment folder path and increment if one already exists executed on the same day
-        experiment_path = self.main_folder + "\\" + str(date.today()) + "_V1"
+        today = str(date.today())
+        experiment_path = self.main_folder + "\\" + today + "_V1"
         if os.path.exists(experiment_path):
-            index = str(max([self.get_int(path.split("V")[-1]) for path in os.listdir(self.main_folder)]) + 1)
+            paths = [path for path in os.listdir(self.main_folder) if today in path]
+            index = str(max([self.get_int(path.split("V")[-1]) for path in paths]) + 1)
             experiment_path = experiment_path[:-1] + index
 
         # Get path for each model in the experiment directory
