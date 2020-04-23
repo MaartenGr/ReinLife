@@ -35,9 +35,14 @@ class Saver:
     "brain_x.pt" where x is simply the sequence in which it is saved.
 
     """
-    def __init__(self, main_folder):
+    def __init__(self, main_folder, google_colab=False):
         cwd = os.getcwd()
-        self.main_folder = cwd + "\\" + main_folder
+        self.google_colab = google_colab
+        if self.google_colab:
+            self.separator = "/"
+        else:
+            self.separator = "\\"
+        self.main_folder = cwd + self.separator + main_folder
 
     def save(self, agents, family, results, settings, fig):
         """ Save brains and create directories if neccesary """
@@ -47,13 +52,14 @@ class Saver:
         for agent in agents:
             agent.save_brain(agent_paths[agent])
 
-        with open(experiment_path + "\\" + "results.json", "w") as f:
+        with open(experiment_path + self.separator + "results.json", "w") as f:
             json.dump(results, f, indent=4)
 
-        with open(experiment_path + "\\" + "settings.json", "w") as f:
+        with open(experiment_path + self.separator + "settings.json", "w") as f:
             json.dump(settings, f, indent=4)
 
-        fig.savefig(experiment_path + "\\" + "results.png", dpi=300)
+        if fig:
+            fig.savefig(experiment_path + self.separator + "results.png", dpi=300)
 
         print("################")
         print("Save Successful!")
@@ -63,22 +69,24 @@ class Saver:
         """ Get all paths for creating directories and paths for agents' brains """
         # Get experiment folder path and increment if one already exists executed on the same day
         today = str(date.today())
-        experiment_path = self.main_folder + "\\" + today + "_V1"
+        experiment_path = self.main_folder + self.separator + today + "_V1"
         if os.path.exists(experiment_path):
             paths = [path for path in os.listdir(self.main_folder) if today in path]
             index = str(max([self.get_int(path.split("V")[-1]) for path in paths]) + 1)
             experiment_path = experiment_path[:-1] + index
 
         # Get path for each model in the experiment directory
-        model_paths = list(set([experiment_path + "\\" + agent.brain.method for agent in agents]))
+        model_paths = list(set([experiment_path + self.separator + agent.brain.method for agent in agents]))
 
         if family:
-            agents_paths = {agent: experiment_path + "\\" + agent.brain.method + "\\" + "brain_gen_" + str(agent.gen)
+            agents_paths = {agent: experiment_path + self.separator + agent.brain.method +
+                                   self.separator + "brain_gen_" + str(agent.gen)
                             for agent in agents}
 
         # If agents have the same model (i.e., "duplicates"), then increment their directory number
         else:
-            agents_paths = {agent: experiment_path + "\\" + agent.brain.method + "\\" + "brain_1" for agent in agents}
+            agents_paths = {agent: experiment_path + self.separator + agent.brain.method +
+                                   self.separator + "brain_1" for agent in agents}
             vals, count = np.unique([val for val in agents_paths.values()], return_counts=True)
             duplicates = {x[0]: y[0] for x, y in zip(vals[np.argwhere(count > 1)], count[np.argwhere(count > 1)])}
             for duplicate in duplicates.keys():

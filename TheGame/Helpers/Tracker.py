@@ -262,7 +262,7 @@ class Tracker:
                         with self.grid.output_to(i, k):
                             self.grid.clear_cell()
                             plt.figure(figsize=(3, 3))
-                            plt.title("Average Population Age")
+                            plt.title(variable)
 
                             for gen in range(self.nr_gens):
                                 plt.plot(x, self.results[variable][gen], label=str(gen))
@@ -271,7 +271,7 @@ class Tracker:
                         with self.grid.output_to(i, k):
                             self.grid.clear_cell()
                             plt.figure(figsize=(3, 3))
-                            plt.title("Average Nr Populations")
+                            plt.title(variable)
                             plt.plot(x, self.results[variable])
 
 def mypause(interval):

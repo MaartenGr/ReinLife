@@ -38,7 +38,7 @@ class Environment(gym.Env):
         self.max_gen = len(brains)
         self.evolution = evolution
         self.families = families
-
+        self.google_colab = google_colab
         self.save = save
         self.save_path = save_path
         self.training = training
@@ -150,7 +150,7 @@ class Environment(gym.Env):
         return obs
 
     def save_results(self):
-        saver = Saver('Experiments')
+        saver = Saver('Experiments', google_colab=self.google_colab)
         settings = {"print interval": self.tracker.print_interval,
                     "width": self.width,
                     "height": self.height,
@@ -158,11 +158,12 @@ class Environment(gym.Env):
                     "max agents": self.max_agents,
                     "families": self.families}
 
+        fig = self.tracker.fig if not self.google_colab else None
         if self.families:
             saver.save([Agent(gen=gen, brain=brain) for gen, brain in enumerate(self.brains)], self.families,
-                       self.tracker.results, settings, self.tracker.fig)
+                       self.tracker.results, settings, fig)
         else:
-            saver.save(self.best_agents, self.families, self.tracker.results, settings, self.tracker.fig)
+            saver.save(self.best_agents, self.families, self.tracker.results, settings, fig)
 
     def _get_rewards(self):
         """ Extract reward and whether the game has finished """
