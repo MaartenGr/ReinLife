@@ -99,7 +99,7 @@ class Saver:
 
         if family:
             agents_paths = {agent: experiment_path + self.separator + agent.brain.method +
-                                   self.separator + "brain_gen_" + str(agent.gen)
+                                   self.separator + "brain_gene_" + str(agent.gene)
                             for agent in agents}
 
         # If agents have the same model (i.e., "duplicates"), then increment their directory number

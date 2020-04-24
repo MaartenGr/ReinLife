@@ -1,0 +1,12 @@
+{
+    "__module__": "TheGame.Models.PERD3QN",
+    "decay": 0.99,
+    "epsilon": 0.0848229241100624,
+    "epsilon_min": 0.05,
+    "exploration": 1000,
+    "method": "PERD3QN",
+    "n_epi": 882,
+    "soft_update_freq": 200,
+    "train_freq": 20,
+    "training": true
+}

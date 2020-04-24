@@ -1,6 +1,6 @@
 import random
 import copy
-from typing import List
+from typing import List, Type, Union
 import numpy as np
 
 # Custom packages
@@ -113,63 +113,97 @@ class Environment:
                                brains)
 
     def reset(self):
-        """ Reset the environment to the beginning """
+        """ Resets the environment
+
+        Steps:
+        * Initializes a grid
+        * Create x agents based on n brains
+        * Create a list of best agents based on the first agents' brain
+            * In other words, currently only one type of brain is possible if there are no static families
+        * Initialize all food
+            * For each grid, Food is created with a higher probability (0.1) than Poison (0.05).
+            * One Super Food is created
+        * All observations for each entity is create
+        * Since nothing has happened so far, all entities state is equal to their state'
+        """
         self.grid = Grid(self.width, self.height)
         self.agents = [self._add_agent(random_loc=True, brain=self.brains[i], gene=i) for i in range(self.max_genes)]
+        self.best_agents = [copy.deepcopy(self.agents[0]) for _ in range(10) if not self.static_families]
 
-        self.best_agents = None
-        if not self.static_families:
-            self.best_agents = [copy.deepcopy(self.grid.get_entities(self.entities.agent)[0]) for _ in range(10)]
+        # Initialize all food
+        self._init_food(Food, probability=0.1)
+        self._init_food(Poison, probability=0.05)
+        self._init_food(SuperFood)
 
-        # Add Good Food
-        for i in range(self.width * self.height):
-            if np.random.random() < 0.1:
-                self.grid.set_random(Food, p=1)
-
-        # Add Bad Food
-        for i in range(self.width * self.height):
-            if np.random.random() < 0.05:
-                self.grid.set_random(Poison, p=1)
-
-        # Add super food
-        self.grid.set_random(SuperFood, p=1)
-
-        obs, _ = self._get_obs()
+        # Get observation for all entities
+        obs, _ = self._get_observations()
 
         # Update states of agents
         for agent in self.agents:
             agent.state = agent.state_prime
 
-        return obs
-
     def step(self):
-        """ move a single step """
+        """ Move the environment one step
+
+        Actions taken in this step:
+        * All agents act by:
+            * Decreasing their health by 10
+            * Increasing their age by 1
+            * Attack other entities
+            * Prepare movement to target location
+            * Move to target location if only agent that wants to move there
+        * Update death status of all agents
+        * Rewards for each agent is received:
+            * if agent dead:
+                reward = (-1 * alive_agents) + nr_kin_alive
+            * else if only agent alive:
+                reward = 0
+            * else:
+                reward = nr_kin_alive / alive_agents
+            * Additionally, if they killed an entity, they get an extra 0.2 points
+        * Add new food if there is not sufficient food
+        * Update the observation (field of view) for all entities
+        """
         self._act()
+        self._update_death_status()
         self._get_rewards()
+        self._add_food()
+        self._get_observations()
 
-        # Add food
-        if len(np.where(self.grid.get_numpy() == self.entities.food)[0]) <= ((self.width * self.height) / 10):
-            for i in range(3):
-                if np.random.random() < 0.2:
-                    self.grid.set_random(Food, p=1)
+    def render(self, fps: int = 10) -> bool:
+        """ Render the game using pygame
 
-        # Add poison
-        if len(np.where(self.grid.get_numpy() == self.entities.poison)[0]) <= ((self.width * self.height) / 20):
-            for i in range(3):
-                if np.random.random() < 0.2:
-                    self.grid.set_random(Poison, p=1)
+        Parameters:
+        -----------
+        fps : int, default 10
+            The frames per second to render pygame in
 
-        if len(np.where(self.grid.get_numpy() == self.entities.super_food)[0]) == 0:
-            self.grid.set_random(SuperFood, p=1)
-
-        obs, _ = self._get_obs()
-
-    def render(self, fps=10):
-        """ Render the game using pygame """
+        Returns:
+        --------
+        bool
+            If True, then you have clicked X on the pygame screen and the render will stop.
+            If False, keep rendering.
+        """
         return self.viz.render(self.agents, self.grid, fps=fps)
 
-    def update_env(self, n_epi=0):
-        """ Update the environment """
+    def update_env(self, n_epi: int = 0):
+        """ Update the environment
+
+        Clean ups the environment by removing dead agents, update results, reproduce, etc.
+
+        Steps:
+        * Update result tracker if training
+        * Update best agents if not static families
+        * Reproduce
+        * Produce
+        * Remove dead agents
+        * Update observations and set agents' state to state' since this marks the end of the episode
+
+        Parameters:
+        -----------
+        n_epi : int, default 0
+            The episode number the environment is currently in
+        """
         if self.training:
             self.tracker.update_results(self.agents, n_epi)
 
@@ -181,14 +215,13 @@ class Environment:
         self._produce()
         self._remove_dead_agents()
 
-        obs, _ = self._get_obs()
+        obs, _ = self._get_observations()
 
         for agent in self.agents:
             agent.state = agent.state_prime
 
-        return obs
-
     def save_results(self):
+        """ Save the results of the experiment. For more information see TheGame.Helpers.Saver """
         saver = Saver('Experiments', google_colab=self.google_colab)
         settings = {"print interval": self.tracker.print_interval,
                     "width": self.width,
@@ -203,13 +236,14 @@ class Environment:
         else:
             saver.save(self.best_agents, self.static_families, self.tracker.results, settings, fig)
 
-    def _get_rewards(self):
-        """ Extract reward and whether the game has finished """
-
-        # Update death status for all agents
+    def _update_death_status(self):
+        """ Update death status of all agents"""
         for agent in self.agents:
             if agent.health <= 0 or agent.age == agent.max_age:
                 agent.dead = True
+
+    def _get_rewards(self):
+        """ Extract reward and whether the game has finished """
 
         for agent in self.agents:
             info = ""
@@ -293,7 +327,7 @@ class Environment:
             if agent.dead:
                 self.grid.grid[agent.i, agent.j] = Food((agent.i, agent.j))
 
-    def _get_obs(self):
+    def _get_observations(self):
         """ Get the observation (fov) for each agent """
         self.agents = self.grid.get_entities(self.entities.agent)
         observations = []
@@ -527,3 +561,40 @@ class Environment:
 
             if self.agents[max_fitness_idx] not in self.best_agents and max_fitness > min_fitness:
                 self.best_agents[min_fitness_idx] = self.agents[max_fitness_idx]
+
+    def _init_food(self, entity: Union[Type[Food], Type[Poison], Type[SuperFood]],
+                   probability: float = 0.1):
+        """ Initialize food entities with a certain probability depending on the food type.
+        There can only be one Super Food since it is especially potent.
+
+        Parameters:
+        -----------
+        entity : Food, Poison, or SuperFood
+            The entity that needs to be initialized
+
+        probability: float, default 0.1
+            The probability at which Food or Poison is created at each grid
+        """
+        entity_type = entity([-1, -1]).entity_type
+
+        if entity_type == self.entities.super_food:
+            self.grid.set_random(entity, p=1)
+        else:
+            for i in range(self.width * self.height):
+                if np.random.random() < probability:
+                    self.grid.set_random(entity, p=1)
+
+    def _add_food(self):
+        """ Add food in which Poison and Food can get generated at most 3 times with a probability
+        of 0.2. SuperFood is generated if none exist. """
+
+        if len(np.where(self.grid.get_numpy() == self.entities.food)[0]) <= ((self.width * self.height) / 10):
+            for i in range(3):
+                self.grid.set_random(Food, p=0.2)
+
+        if len(np.where(self.grid.get_numpy() == self.entities.poison)[0]) <= ((self.width * self.height) / 20):
+            for i in range(3):
+                self.grid.set_random(Poison, p=0.2)
+
+        if len(np.where(self.grid.get_numpy() == self.entities.super_food)[0]) == 0:
+            self.grid.set_random(SuperFood, p=1)

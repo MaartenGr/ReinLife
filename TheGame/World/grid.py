@@ -1,6 +1,6 @@
 import numpy as np
 from copy import deepcopy
-from typing import List
+from typing import List, Type
 
 from .entities import Entity
 from .utils import EntityTypes
@@ -42,7 +42,7 @@ class Grid:
         assert j >= 0 and j < self.width
         return self.grid[i, j]
 
-    def set(self, i: int, j: int, entity, **kwargs) -> np.array:
+    def set(self, i: int, j: int, entity: Type[Entity], **kwargs) -> np.array:
         """ Insert an entity at location i, j """
         assert i >= 0 and i < self.height
         assert j >= 0 and j < self.width
@@ -66,7 +66,7 @@ class Grid:
 
         return entities
 
-    def set_random(self, entity, p: float, **kwargs) -> np.array:
+    def set_random(self, entity: Type[Entity], p: float, **kwargs) -> np.array:
         """ Set an entity at a random location iff there is space """
         grid = self.get_numpy()
         indices = np.where(grid == self.entity_type.empty)
@@ -82,7 +82,7 @@ class Grid:
         except ValueError:
             return None
 
-    def update(self, i: int, j: int, entity_1, k: int, l: int, entity_2):
+    def update(self, i: int, j: int, entity_1: Type[Entity], k: int, l: int, entity_2: Type[Entity]):
         """ Update location i, j with entity_1 and k, l with entity_2 """
         self.grid[i, j] = entity_1
         self.grid[k, l] = entity_2
