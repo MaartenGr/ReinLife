@@ -26,8 +26,8 @@ complex behavior.
 
 The basic environment is a numpy matrix of size *n* * *m* where each grid has a pixel size of *24* * *24*.
 Due to the nature of numpy matrices, the coordinate system is different than your traditional coordinate system 
-(see image below).
-
+(see image below).  
+ 
 ![](images/numpy_array.png?raw=true)
 
 Each location within the matrix represents a location which can occupy only a single entity. 
