@@ -7,8 +7,16 @@ from .utils import EntityTypes
 
 
 class Grid:
-    """
-    Represents a basic grid and operations within it
+    """ Represents a basic grid and operations within it
+
+    Parameters:
+    -----------
+    width : int
+        The width of the grid
+
+    heigth : int
+        The height of the grid
+
     """
 
     def __init__(self, width: int, height: int):

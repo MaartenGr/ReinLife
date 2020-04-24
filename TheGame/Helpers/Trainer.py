@@ -52,7 +52,7 @@ def trainer(brains, n_episodes=10_000, width=30, height=30, visualize_results=Fa
 
     """
 
-    env = Environment(width=width, height=height, evolution=True, max_agents=max_agents, brains=brains, grid_size=24,
+    env = Environment(width=width, height=height, max_agents=max_agents, brains=brains, grid_size=24,
                       static_families=static_families, print_interval=print_interval, interactive_results=visualize_results,
                       google_colab=google_colab, training=training)
     env.reset()

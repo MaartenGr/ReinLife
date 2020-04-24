@@ -6,8 +6,16 @@ entities = EntityTypes
 
 
 class Entity:
-    """
-    Represents a basic Entity that can target a new location and move to it
+    """ Represents a basic Entity that can target a new location and move to it
+
+    Parameters:
+    -----------
+    coordinates : Collection[int]
+        The i and j coordinates (2d) of the entity.
+
+    entity_type : int
+        The type of entity which follows .utils.EntityTypes
+
     """
     def __init__(self, coordinates: Collection[int], entity_type: int):
         assert len(coordinates) == 2
@@ -35,8 +43,12 @@ class Entity:
 
 
 class Empty(Entity):
-    """
-    Represents an Empty Space
+    """ Represents an Empty Space
+
+    Parameters:
+    -----------
+    coordinates : Collection[int]
+        The i and j coordinates (2d) of the empty space.
     """
     def __init__(self, coordinates: Collection[int]):
         super().__init__(coordinates, entities.empty)
@@ -50,8 +62,16 @@ class Empty(Entity):
 
 
 class BasicFood(Entity):
-    """
-    Represents the basic food entity which has some nutritional value
+    """ Represents the basic food entity which has some nutritional value
+
+    Parameters:
+    -----------
+    coordinates : Collection[int]
+        The i and j coordinates (2d) of the entity.
+
+    entity_type : int
+        The type of entity which follows .utils.EntityTypes
+
     """
     def __init__(self, coordinates: Collection[int], entity_type: int):
         super().__init__(coordinates, entity_type)
@@ -67,8 +87,12 @@ class BasicFood(Entity):
 
 
 class Food(BasicFood):
-    """
-    Represents the food entity which has a positive nutritional  value
+    """ Represents the food entity which has a positive nutritional  value
+
+    Parameters:
+    -----------
+    coordinates : Collection[int]
+        The i and j coordinates (2d) of the empty space.
     """
     def __init__(self, coordinates: Collection[int]):
         super().__init__(coordinates, entities.food)
@@ -76,8 +100,13 @@ class Food(BasicFood):
 
 
 class Poison(BasicFood):
-    """
-    Represents the poison entity which has a positive nutritional  value
+    """ Represents the poison entity which has a positive nutritional  value
+
+
+    Parameters:
+    -----------
+    coordinates : Collection[int]
+        The i and j coordinates (2d) of the empty space.
     """
     def __init__(self, coordinates: Collection[int]):
         super().__init__(coordinates, entities.poison)
@@ -85,8 +114,13 @@ class Poison(BasicFood):
 
 
 class SuperFood(BasicFood):
-    """
-    Represents the super food entity which has a positive nutritional value and has a max_age multiplier
+    """ Represents the super food entity which has a positive nutritional value and has a max_age multiplier
+
+
+    Parameters:
+    -----------
+    coordinates : Collection[int]
+        The i and j coordinates (2d) of the empty space.
     """
     def __init__(self, coordinates: Collection[int]):
         super().__init__(coordinates, entities.super_food)
@@ -95,10 +129,21 @@ class SuperFood(BasicFood):
 
 
 class Agent(Entity):
+    """ Represents an Agent that learns and thinks for itself
+
+
+    Parameters:
+    -----------
+    coordinates : Collection[int], default (None, None)
+        The i and j coordinates (2d) of the empty space.
+
+    brain : BasicBrain, default None
+        The brain of the agent.
+
+    gene : int, default None
+        The gene of the Agent which represents to which family it belongs
     """
-    Represents an Agent that learns and thinks for itself
-    """
-    def __init__(self, coordinates: Collection[int] = (None, None), brain: BasicBrain = None, gen: int = None):
+    def __init__(self, coordinates: Collection[int] = (None, None), brain: BasicBrain = None, gene: int = None):
         super().__init__(coordinates, entities.agent)
 
         # Agent-based stats
@@ -107,7 +152,7 @@ class Agent(Entity):
         self.max_age = 50
         self.brain = brain
         self.reproduced = False
-        self.gen = gen
+        self.gene = gene
         self.fitness = 0
         self.action = -1
         self.killed = 0
@@ -167,7 +212,7 @@ class Agent(Entity):
         if self.brain.method == "PERD3QN":
             self.brain.apply_gaussian_noise()
 
-    def get_action(self, n_epi):
+    def get_action(self, n_epi: int):
         """ Extracts the action """
         if self.brain.method == "PPO":
             self.action, self.prob = self.brain.get_action(self.state, n_epi)

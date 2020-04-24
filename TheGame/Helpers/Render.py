@@ -62,12 +62,12 @@ class Visualize:
         for agent in agents:
             if not agent.dead:
                 if self.families:
-                    color = self.colors[agent.gen]
+                    color = self.colors[agent.gene]
                 else:
-                    if agent.gen < len(self.colors):
-                        color = self.colors[agent.gen]
+                    if agent.gene < len(self.colors):
+                        color = self.colors[agent.gene]
                     else:
-                        color = self.colors[agent.gen % len(self.colors)]
+                        color = self.colors[agent.gene % len(self.colors)]
 
                 # Body
                 pg.draw.rect(self.screen, color,

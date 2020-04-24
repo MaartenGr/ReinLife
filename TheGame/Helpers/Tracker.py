@@ -4,31 +4,31 @@ import matplotlib
 
 
 class Tracker:
-    def __init__(self, print_interval, interactive=False, google_colab=False, nr_gens=None, families=True,
+    def __init__(self, print_interval, interactive=False, google_colab=False, nr_genes=None, families=True,
                  brains=None):
-        self.nr_gens = nr_gens
+        self.nr_genes = nr_genes
 
         # Tracks results each step
         self.track_results = {
-            "Avg Population Size": {gen: [] for gen in range(nr_gens)},
-            "Avg Population Age": {gen: [] for gen in range(nr_gens)},
-            "Avg Population Fitness": {gen: [] for gen in range(nr_gens)},
-            "Best Population Age": {gen: [] for gen in range(nr_gens)},
-            "Avg Number of Attacks": {gen: [] for gen in range(nr_gens)},
-            "Avg Number of Kills": {gen: [] for gen in range(nr_gens)},
-            "Avg Number of Intra Kills": {gen: [] for gen in range(nr_gens)},
+            "Avg Population Size": {gene: [] for gene in range(nr_genes)},
+            "Avg Population Age": {gene: [] for gene in range(nr_genes)},
+            "Avg Population Fitness": {gene: [] for gene in range(nr_genes)},
+            "Best Population Age": {gene: [] for gene in range(nr_genes)},
+            "Avg Number of Attacks": {gene: [] for gene in range(nr_genes)},
+            "Avg Number of Kills": {gene: [] for gene in range(nr_genes)},
+            "Avg Number of Intra Kills": {gene: [] for gene in range(nr_genes)},
             "Avg Number of Populations": []
         }
 
         # Averages results from the tracker above each print_interval
         self.results = {
-            "Avg Population Size": {gen: [] for gen in range(nr_gens)},
-            "Avg Population Age": {gen: [] for gen in range(nr_gens)},
-            "Avg Population Fitness": {gen: [] for gen in range(nr_gens)},
-            "Best Population Age": {gen: [] for gen in range(nr_gens)},
-            "Avg Number of Attacks": {gen: [] for gen in range(nr_gens)},
-            "Avg Number of Kills": {gen: [] for gen in range(nr_gens)},
-            "Avg Number of Intra Kills": {gen: [] for gen in range(nr_gens)},
+            "Avg Population Size": {gene: [] for gene in range(nr_genes)},
+            "Avg Population Age": {gene: [] for gene in range(nr_genes)},
+            "Avg Population Fitness": {gene: [] for gene in range(nr_genes)},
+            "Best Population Age": {gene: [] for gene in range(nr_genes)},
+            "Avg Number of Attacks": {gene: [] for gene in range(nr_genes)},
+            "Avg Number of Kills": {gene: [] for gene in range(nr_genes)},
+            "Avg Number of Intra Kills": {gene: [] for gene in range(nr_genes)},
             "Avg Number of Populations": []
         }
 
@@ -41,7 +41,7 @@ class Tracker:
         self.first_run = True
 
         if not self.families:
-            self.nr_gens = 1
+            self.nr_genes = 1
 
         if interactive:
             columns = 3
@@ -79,9 +79,9 @@ class Tracker:
 
                         else:
                             if families:
-                                for gen in range(nr_gens):
-                                    label = f"{brains[gen].method}: Gen {gen}"
-                                    self.ax[i][k].plot([], [], label=label, color=self.colors[gen])
+                                for gene in range(nr_genes):
+                                    label = f"{brains[gene].method}: Gen {gene}"
+                                    self.ax[i][k].plot([], [], label=label, color=self.colors[gene])
                             else:
                                 self.ax[i][k].plot([], [], label="", color=self.colors[0])
 
@@ -115,7 +115,7 @@ class Tracker:
                 self.results["Avg Number of Populations"].append(aggregation)
 
             else:
-                for gen in range(self.nr_gens):
+                for gen in range(self.nr_genes):
                     aggregation = self._aggregate(self.track_results[variable][gen])
                     self.results[variable][gen].append(aggregation)
 
@@ -134,80 +134,80 @@ class Tracker:
         else:
             for variable in self.track_results.keys():
                 if variable != "Avg Number of Populations":
-                    for gen in range(self.nr_gens):
+                    for gen in range(self.nr_genes):
                         self.track_results[variable][gen].append(-1)
                 else:
                     self.track_results[variable].append(-1)
 
     def _track_avg_population_size(self, agents):
         """ Track the average size of all populations """
-        for gen in range(self.nr_gens):
-            gens = [agent.gen for agent in agents if (agent.gen == gen and self.families) or (not self.families)]
-            if len(gens) == 0:
-                self.track_results["Avg Population Size"][gen].append(-1)
+        for gene in range(self.nr_genes):
+            genes = [agent.gene for agent in agents if (agent.gene == gene and self.families) or (not self.families)]
+            if len(genes) == 0:
+                self.track_results["Avg Population Size"][gene].append(-1)
             else:
-                unique, counts = np.unique(gens, return_counts=True)
-                self.track_results["Avg Population Size"][gen].append(np.mean(counts))
+                unique, counts = np.unique(genes, return_counts=True)
+                self.track_results["Avg Population Size"][gene].append(np.mean(counts))
 
     def _track_avg_population_age(self, agents):
         """ Track the average age of all entities """
-        for gen in range(self.nr_gens):
-            pop_age = [agent.age for agent in agents if (agent.gen == gen and self.families) or (not self.families)]
+        for gene in range(self.nr_genes):
+            pop_age = [agent.age for agent in agents if (agent.gene == gene and self.families) or (not self.families)]
             if len(pop_age) == 0:
-                self.track_results["Avg Population Age"][gen].append(-1)
+                self.track_results["Avg Population Age"][gene].append(-1)
             else:
-                self.track_results["Avg Population Age"][gen].append(np.mean(pop_age))
+                self.track_results["Avg Population Age"][gene].append(np.mean(pop_age))
 
     def _track_avg_population_fitness(self, agents):
         """ Update the average fitness/reward of all entities """
-        for gen in range(self.nr_gens):
-            fitness = [agent.reward for agent in agents if (agent.gen == gen and self.families) or
+        for gene in range(self.nr_genes):
+            fitness = [agent.reward for agent in agents if (agent.gene == gene and self.families) or
                        (not self.families)]
             if len(fitness) == 0:
-                self.track_results["Avg Population Fitness"][gen].append(-1)
+                self.track_results["Avg Population Fitness"][gene].append(-1)
             else:
-                self.track_results["Avg Population Fitness"][gen].append(np.mean(fitness))
+                self.track_results["Avg Population Fitness"][gene].append(np.mean(fitness))
 
     def _track_best_age(self, agents):
         """ Track the highest age per gen """
-        for gen in range(self.nr_gens):
-            ages = [agent.age for agent in agents if (agent.gen == gen and self.families) or (not self.families)]
+        for gene in range(self.nr_genes):
+            ages = [agent.age for agent in agents if (agent.gene == gene and self.families) or (not self.families)]
             if len(ages) == 0:
-                self.track_results["Best Population Age"][gen].append(-1)
+                self.track_results["Best Population Age"][gene].append(-1)
             else:
-                max_age = max([agent.age for agent in agents if (agent.gen == gen and self.families) or
+                max_age = max([agent.age for agent in agents if (agent.gene == gene and self.families) or
                                                          (not self.families)])
-                self.track_results["Best Population Age"][gen].append(max_age)
+                self.track_results["Best Population Age"][gene].append(max_age)
 
     def _track_avg_nr_attacks(self, agents):
         """ Track the average number of attacks per gen """
-        for gen in range(self.nr_gens):
-            actions = [agent.action for agent in agents if (agent.gen == gen and self.families) or
+        for gene in range(self.nr_genes):
+            actions = [agent.action for agent in agents if (agent.gene == gene and self.families) or
                        (not self.families)]
             attacks = [action for action in actions if action >= 4]
             if len(actions) == 0:
-                self.track_results["Avg Number of Attacks"][gen].append(-1)
+                self.track_results["Avg Number of Attacks"][gene].append(-1)
             else:
-                self.track_results["Avg Number of Attacks"][gen].append(len(attacks) / len(actions))
+                self.track_results["Avg Number of Attacks"][gene].append(len(attacks) / len(actions))
 
     def _track_avg_nr_kills(self, agents):
         """ Track the average number of kills per gen """
-        for gen in range(self.nr_gens):
-            killed = sum([agent.killed for agent in agents if (agent.gen == gen and self.families) or
+        for gene in range(self.nr_genes):
+            killed = sum([agent.killed for agent in agents if (agent.gene == gene and self.families) or
                           (not self.families)])
-            intra_killed = sum([agent.killed for agent in agents if (agent.gen == gen and self.families) or
+            intra_killed = sum([agent.killed for agent in agents if (agent.gene == gene and self.families) or
                                 (not self.families)])
-            self.track_results["Avg Number of Kills"][gen].append(killed)
+            self.track_results["Avg Number of Kills"][gene].append(killed)
 
             if killed != 0:
-                self.track_results["Avg Number of Intra Kills"][gen].append(intra_killed / killed)
+                self.track_results["Avg Number of Intra Kills"][gene].append(intra_killed / killed)
             else:
-                self.track_results["Avg Number of Intra Kills"][gen].append(0)
+                self.track_results["Avg Number of Intra Kills"][gene].append(0)
 
     def _track_avg_nr_populations(self, agents):
         """ Track the average nr of populations  """
-        gens = [agent.gen for agent in agents]
-        self.track_results["Avg Number of Populations"].append(len(set(gens)))
+        genes = [agent.gene for agent in agents]
+        self.track_results["Avg Number of Populations"].append(len(set(genes)))
 
     @staticmethod
     def get_val(data, i, col):
@@ -236,10 +236,10 @@ class Tracker:
                     if type(self.results[variable]) == dict:
 
                         if not self.first_run:
-                            for gen in range(self.nr_gens):
+                            for gen in range(self.nr_genes):
                                 self.ax[i][k].lines[0].remove()
 
-                        for gen in range(self.nr_gens):
+                        for gen in range(self.nr_genes):
                             self.ax[i][k].plot(x, self.results[variable][gen], label=gen, color=self.colors[gen])
                     else:
                         if not self.first_run:
@@ -266,7 +266,7 @@ class Tracker:
                             plt.figure(figsize=(3, 3))
                             plt.title(variable)
 
-                            for gen in range(self.nr_gens):
+                            for gen in range(self.nr_genes):
                                 plt.plot(x, self.results[variable][gen], label=str(gen))
                             plt.legend()
                     else:

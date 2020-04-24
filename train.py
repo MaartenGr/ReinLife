@@ -1,7 +1,7 @@
 from TheGame.Models import PERD3QN, D3QN, DQN
 from TheGame.Helpers import trainer
 
-n_episodes = 10_000
+n_episodes = 1_500
 # brains = [PERD3QN(153, 8),
 #           D3QN(153, 8),
 #           DQN(153, max_epi=n_episodes, learning_rate=0.0005),

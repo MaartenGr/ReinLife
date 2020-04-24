@@ -1,12 +1,7 @@
-# Native
 import random
 import copy
 from typing import List
-
-# 3rd party
 import numpy as np
-import gym
-from gym import spaces
 
 # Custom packages
 from .entities import Agent, Empty, Food, Poison, SuperFood
@@ -18,83 +13,112 @@ from TheGame.Helpers.Render import Visualize
 from TheGame.Models.utils import BasicBrain
 
 
-class Environment(gym.Env):
+class Environment:
+    """ The main environment in which agents act
+
+
+    Parameters:
+    -----------
+    width : int, default 30
+        The width of the environment
+
+    height : int, default 30
+        The height of the environment
+
+    brains : List[BasicBrain], default None
+        A list of brains used in the environment
+
+    grid_size : int, default 16
+        The size, in pixels, of each grid. Shape = (grid_size * grid_size)
+
+    max_agents : int, default 50
+        The maximum number of agents that can be alive in the environment at the same time
+
+    print_interval : int, default 500
+        The number of episodes at which interval to track results and update graphs
+
+    static_families : bool, default True
+        If True, a fixed number of families sharing the same gene can appear in the environment.
+        This number is then defined by the number of brains that were selected. Each family
+        would then share a brain, but brains differ between families.
+
+    interactive_results : bool, default False
+        Whether to show interactive matplotlib results of the simulation.
+
+        NOTE: Due to the generation of matplotlib plots, this can significantly slow
+        down the simulation. Set the print_interval high enough (i.e., 500 oir higher)
+        to prevent this from happening.
+
+    google_colab : bool, default False
+        Set to true if you are running the simulation in google colab
+
+    training : bool, default True
+        Set to False if you want to test resulting brains. Keep True if you want to train new brains.
+
+    save : bool, default False
+        Whether you want to save the resulting brains
+
+    pastel_colors : bool, default False
+        Whether to use pastel colors for rendering the agents in the pygame simulation
+    """
+
     def __init__(self,
                  width: int = 30,
                  height: int = 30,
-                 evolution: bool = False,
                  brains: List[BasicBrain] = None,
                  grid_size: int = 16,
-                 max_agents: int = 10,
-                 pastel=False,
-                 static_families=True,
-                 print_interval=True,
-                 interactive_results=False,
-                 google_colab=False,
-                 training=True,
-                 save=False,
-                 save_path=None):
-
-        # Classes
-        self.actions = Actions
-        self.entities = EntityTypes
+                 max_agents: int = 50,
+                 print_interval: int = 500,
+                 static_families: bool = True,
+                 interactive_results: bool = False,
+                 google_colab: bool = False,
+                 training: bool = True,
+                 save: bool = False,
+                 pastel_colors: bool = False):
 
         # Coordinate information
         self.width = width
         self.height = height
         self.grid = None
 
+        # Classes
+        self.actions = Actions
+        self.entities = EntityTypes
+
         # Trackers
         self.agents = []
         self.best_agents = []
+        self.brains = brains
+
+        # Statistics
         self.max_agents = max_agents
-        self.max_gen = len(brains)
-        self.evolution = evolution
+        self.max_genes = len(brains)
+
+        # Options
         self.static_families = static_families
         self.google_colab = google_colab
         self.save = save
-        self.save_path = save_path
         self.training = training
 
-        if not brains:
-            self.brains = [None for _ in range(len(brains))]
-        else:
-            self.brains = brains
-
-        self.current_step = 0
-        if not evolution:
-            self.max_step = 30
-        else:
-            self.max_step = 1e18
-
-        # For Gym
-        self.action_space = spaces.Discrete(8)
-        self.observation_space = spaces.Box(low=-1,
-                                            high=1,
-                                            shape=(151,),
-                                            dtype=np.float)
+        # Not used, but helps in understanding the environment
+        self.action_space = 8
+        self.observation_space = 153
 
         # Render
-        self.viz = Visualize(self.width, self.height, grid_size, pastel, families=self.static_families)
+        self.viz = Visualize(self.width, self.height, grid_size, pastel_colors, self.static_families)
 
         # Results tracker
-        self.tracker = Tracker(print_interval=print_interval, interactive=interactive_results,
-                               google_colab=google_colab, nr_gens=len(self.brains), families=self.static_families,
-                               brains=brains)
+        self.tracker = Tracker(print_interval, interactive_results,
+                               google_colab, len(self.brains), self.static_families,
+                               brains)
 
-    def reset(self, is_render=False):
+    def reset(self):
         """ Reset the environment to the beginning """
-        self.current_step = 0
         self.grid = Grid(self.width, self.height)
+        self.agents = [self._add_agent(random_loc=True, brain=self.brains[i], gene=i) for i in range(self.max_genes)]
 
-        # Add agents
-        self.agents = []
-        for i in range(len(self.brains)):
-            self._add_agent(random_loc=True, brain=self.brains[i], gen=i)
-
-        if self.static_families:
-            self.best_agents = [self.grid.get_entities(self.entities.agent)[0] for _ in range(5)]
-        else:
+        self.best_agents = None
+        if not self.static_families:
             self.best_agents = [copy.deepcopy(self.grid.get_entities(self.entities.agent)[0]) for _ in range(10)]
 
         # Add Good Food
@@ -107,17 +131,19 @@ class Environment(gym.Env):
             if np.random.random() < 0.05:
                 self.grid.set_random(Poison, p=1)
 
-        # Add super berrry
+        # Add super food
         self.grid.set_random(SuperFood, p=1)
 
         obs, _ = self._get_obs()
+
+        # Update states of agents
         for agent in self.agents:
             agent.state = agent.state_prime
+
         return obs
 
     def step(self):
         """ move a single step """
-        self.current_step += 1
         self._act()
         self._get_rewards()
 
@@ -167,13 +193,12 @@ class Environment(gym.Env):
         settings = {"print interval": self.tracker.print_interval,
                     "width": self.width,
                     "height": self.height,
-                    "evolution": self.evolution,
                     "max agents": self.max_agents,
                     "families": self.static_families}
 
         fig = self.tracker.fig if not self.google_colab else None
         if self.static_families:
-            saver.save([Agent(gen=gen, brain=brain) for gen, brain in enumerate(self.brains)], self.static_families,
+            saver.save([Agent(gene=gene, brain=brain) for gene, brain in enumerate(self.brains)], self.static_families,
                        self.tracker.results, settings, fig)
         else:
             saver.save(self.best_agents, self.static_families, self.tracker.results, settings, fig)
@@ -187,29 +212,22 @@ class Environment(gym.Env):
                 agent.dead = True
 
         for agent in self.agents:
-            reward = 0
             info = ""
             done = False
 
             nr_kin_alive = max(0, sum([1 for other_agent in self.agents if
                                        not other_agent.dead and
-                                       agent.gen == other_agent.gen]) - 1)
+                                       agent.gene == other_agent.gene]) - 1)
             alive_agents = sum([1 for other_agent in self.agents if not other_agent.dead])
 
             if agent.dead:
                 reward = (-1 * alive_agents) + nr_kin_alive
                 done = True
                 info = "Dead"
-
-            elif self.evolution:
-                if alive_agents == 1:
-                    reward = 0
-                else:
-                    reward = nr_kin_alive / alive_agents
-
-            elif self.current_step >= self.max_step:
-                done = True
-                reward = 400
+            elif alive_agents == 1:
+                reward = 0
+            else:
+                reward = nr_kin_alive / alive_agents
 
             if agent.killed:
                 reward += 0.2
@@ -228,12 +246,12 @@ class Environment(gym.Env):
         self._prepare_movement()
         self._execute_movement()
 
-    def _add_agent(self, coordinates=None, brain=None, gen=None, random_loc=False, p=1):
+    def _add_agent(self, coordinates=None, brain=None, gene=None, random_loc=False, p=1):
         """ Add agent, if random_loc then add at a random location with probability p """
         if random_loc:
-            return self.grid.set_random(Agent, p=p, brain=brain, gen=gen)
+            return self.grid.set_random(Agent, p=p, brain=brain, gene=gene)
         else:
-            return self.grid.set(coordinates[0], coordinates[1], Agent, brain=brain, gen=gen)
+            return self.grid.set(coordinates[0], coordinates[1], Agent, brain=brain, gene=gene)
 
     def _reproduce(self):
         """ Reproduce if old enough """
@@ -241,32 +259,31 @@ class Environment(gym.Env):
             if not agent.dead and not agent.reproduced:
                 if len(self.agents) <= self.max_agents and random.random() > 0.95 and agent.age > 5:
 
+                    new_brain = agent.brain
                     if self.static_families:
-                        new_brain = self.brains[agent.gen]
-                    else:
-                        new_brain = agent.brain
+                        new_brain = self.brains[agent.gene]
 
                     coordinates = self._get_empty_within_fov(agent)
                     if coordinates:
                         self._add_agent(coordinates=coordinates[random.randint(0, len(coordinates) - 1)],
-                                        brain=new_brain, gen=agent.gen)
+                                        brain=new_brain, gene=agent.gene)
                     else:
-                        self._add_agent(random_loc=True, brain=new_brain, gen=agent.gen)
+                        self._add_agent(random_loc=True, brain=new_brain, gene=agent.gene)
 
     def _produce(self):
         """ Randomly produce new agent if too little agents are alive """
         if len(self.agents) <= self.max_agents + 1 and random.random() > 0.95:
 
             if self.static_families:
-                gen = random.choice([x for x in range(len(self.brains))])
-                brain = self.brains[gen]
-                self._add_agent(random_loc=True, brain=brain, gen=gen)
+                gene = random.choice([x for x in range(len(self.brains))])
+                brain = self.brains[gene]
+                self._add_agent(random_loc=True, brain=brain, gene=gene)
 
             else:
                 best_agent = random.choice(self.best_agents)
                 brain = copy.deepcopy(best_agent.brain)
-                self.max_gen += 1
-                agent = self._add_agent(random_loc=True, brain=brain, gen=self.max_gen)
+                self.max_genes += 1
+                agent = self._add_agent(random_loc=True, brain=brain, gene=self.max_genes)
                 if agent:
                     agent.scramble_brain()
 
@@ -298,7 +315,7 @@ class Environment(gym.Env):
             vectorize = np.vectorize(lambda obj: obj.health / 200 if obj.entity_type == self.entities.agent else -1)
             health_obs = list(vectorize(observation).flatten())
 
-            nr_genes = sum([1 for other_agent in self.agents if agent.gen == other_agent.gen])
+            nr_genes = sum([1 for other_agent in self.agents if agent.gene == other_agent.gene])
 
             reproduced = 0
             if agent.reproduced:
@@ -335,7 +352,7 @@ class Environment(gym.Env):
         if obj.entity_type == self.entities.agent:
             if obj.dead:
                 return 0
-            elif obj.gen == agent.gen:
+            elif obj.gene == agent.gene:
                 return 1
             else:
                 return -1
@@ -465,7 +482,7 @@ class Environment(gym.Env):
                     target.is_attacked()
                     agent.execute_attack()
 
-                    if target.gen == agent.gen:
+                    if target.gene == agent.gene:
                         agent.inter_killed = 1
                     else:
                         agent.intra_killed = 1
