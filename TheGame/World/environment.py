@@ -1,6 +1,7 @@
 # Native
 import random
 import copy
+from typing import List
 
 # 3rd party
 import numpy as np
@@ -8,19 +9,31 @@ import gym
 from gym import spaces
 
 # Custom packages
-from TheGame.World.Entities import Agent, Empty, Food, Poison, SuperFood
-from TheGame.World.Grid import Grid
-from TheGame.World.utils import Actions, EntityTypes
+from .entities import Agent, Empty, Food, Poison, SuperFood
+from .grid import Grid
+from .utils import Actions, EntityTypes
 from TheGame.Helpers.Tracker import Tracker
 from TheGame.Helpers.Saver import Saver
 from TheGame.Helpers.Render import Visualize
+from TheGame.Models.utils import BasicBrain
 
 
 class Environment(gym.Env):
-    def __init__(self, width=30, height=30, evolution=False, brains=None,
-                 grid_size=16, max_agents=10, pastel=False, families=True,
-                 print_interval=True, interactive_results=False, google_colab=False, training=True,
-                 save=False, save_path=None):
+    def __init__(self,
+                 width: int = 30,
+                 height: int = 30,
+                 evolution: bool = False,
+                 brains: List[BasicBrain] = None,
+                 grid_size: int = 16,
+                 max_agents: int = 10,
+                 pastel=False,
+                 static_families=True,
+                 print_interval=True,
+                 interactive_results=False,
+                 google_colab=False,
+                 training=True,
+                 save=False,
+                 save_path=None):
 
         # Classes
         self.actions = Actions
@@ -37,7 +50,7 @@ class Environment(gym.Env):
         self.max_agents = max_agents
         self.max_gen = len(brains)
         self.evolution = evolution
-        self.families = families
+        self.static_families = static_families
         self.google_colab = google_colab
         self.save = save
         self.save_path = save_path
@@ -62,11 +75,11 @@ class Environment(gym.Env):
                                             dtype=np.float)
 
         # Render
-        self.viz = Visualize(self.width, self.height, grid_size, pastel, families=self.families)
+        self.viz = Visualize(self.width, self.height, grid_size, pastel, families=self.static_families)
 
         # Results tracker
         self.tracker = Tracker(print_interval=print_interval, interactive=interactive_results,
-                               google_colab=google_colab, nr_gens=len(self.brains), families=self.families,
+                               google_colab=google_colab, nr_gens=len(self.brains), families=self.static_families,
                                brains=brains)
 
     def reset(self, is_render=False):
@@ -79,7 +92,7 @@ class Environment(gym.Env):
         for i in range(len(self.brains)):
             self._add_agent(random_loc=True, brain=self.brains[i], gen=i)
 
-        if self.families:
+        if self.static_families:
             self.best_agents = [self.grid.get_entities(self.entities.agent)[0] for _ in range(5)]
         else:
             self.best_agents = [copy.deepcopy(self.grid.get_entities(self.entities.agent)[0]) for _ in range(10)]
@@ -134,7 +147,7 @@ class Environment(gym.Env):
         if self.training:
             self.tracker.update_results(self.agents, n_epi)
 
-        if not self.families:
+        if not self.static_families:
             self._update_best_agents()
 
         self.agents = self.grid.get_entities(self.entities.agent)
@@ -156,14 +169,14 @@ class Environment(gym.Env):
                     "height": self.height,
                     "evolution": self.evolution,
                     "max agents": self.max_agents,
-                    "families": self.families}
+                    "families": self.static_families}
 
         fig = self.tracker.fig if not self.google_colab else None
-        if self.families:
-            saver.save([Agent(gen=gen, brain=brain) for gen, brain in enumerate(self.brains)], self.families,
+        if self.static_families:
+            saver.save([Agent(gen=gen, brain=brain) for gen, brain in enumerate(self.brains)], self.static_families,
                        self.tracker.results, settings, fig)
         else:
-            saver.save(self.best_agents, self.families, self.tracker.results, settings, fig)
+            saver.save(self.best_agents, self.static_families, self.tracker.results, settings, fig)
 
     def _get_rewards(self):
         """ Extract reward and whether the game has finished """
@@ -218,10 +231,9 @@ class Environment(gym.Env):
     def _add_agent(self, coordinates=None, brain=None, gen=None, random_loc=False, p=1):
         """ Add agent, if random_loc then add at a random location with probability p """
         if random_loc:
-            return self.grid.set_random(Agent, p=p, entity_type=self.entities.agent, brain=brain, gen=gen)
+            return self.grid.set_random(Agent, p=p, brain=brain, gen=gen)
         else:
-            return self.grid.set(coordinates[0], coordinates[1], Agent, entity_type=self.entities.agent, brain=brain,
-                                 gen=gen)
+            return self.grid.set(coordinates[0], coordinates[1], Agent, brain=brain, gen=gen)
 
     def _reproduce(self):
         """ Reproduce if old enough """
@@ -229,7 +241,7 @@ class Environment(gym.Env):
             if not agent.dead and not agent.reproduced:
                 if len(self.agents) <= self.max_agents and random.random() > 0.95 and agent.age > 5:
 
-                    if self.families:
+                    if self.static_families:
                         new_brain = self.brains[agent.gen]
                     else:
                         new_brain = agent.brain
@@ -245,7 +257,7 @@ class Environment(gym.Env):
         """ Randomly produce new agent if too little agents are alive """
         if len(self.agents) <= self.max_agents + 1 and random.random() > 0.95:
 
-            if self.families:
+            if self.static_families:
                 gen = random.choice([x for x in range(len(self.brains))])
                 brain = self.brains[gen]
                 self._add_agent(random_loc=True, brain=brain, gen=gen)
@@ -255,7 +267,8 @@ class Environment(gym.Env):
                 brain = copy.deepcopy(best_agent.brain)
                 self.max_gen += 1
                 agent = self._add_agent(random_loc=True, brain=brain, gen=self.max_gen)
-                agent.scramble_brain()
+                if agent:
+                    agent.scramble_brain()
 
     def _remove_dead_agents(self):
         """ Remove dead agent from grid """

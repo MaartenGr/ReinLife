@@ -2,7 +2,10 @@ from enum import IntEnum
 
 
 class Actions(IntEnum):
-    """ All possible actions """
+    """
+    All possible actions
+    """
+
     up = 0
     right = 1
     down = 2
@@ -15,8 +18,12 @@ class Actions(IntEnum):
 
 
 class EntityTypes(IntEnum):
-    """ The types of entities that are currently possible.
-    NOTE: All entities except kin cannot occupy the same space"""
+    """
+    The types of entities that are currently possible.
+
+    NOTE: All entities except kin cannot occupy the same space
+
+    """
 
     empty = 0
     food = 1

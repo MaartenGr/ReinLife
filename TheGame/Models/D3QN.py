@@ -13,53 +13,6 @@ batch_size = 64
 capacity = 10000
 
 
-class replay_buffer(object):
-    def __init__(self, capacity):
-        self.capacity = capacity
-        self.memory = deque(maxlen=self.capacity)
-
-    def store(self, observation, action, reward, next_observation, done):
-        observation = np.expand_dims(observation, 0)
-        next_observation = np.expand_dims(next_observation, 0)
-        self.memory.append([observation, action, reward, next_observation, done])
-
-    def sample(self, batch_size):
-        batch = random.sample(self.memory, batch_size)
-        observation, action, reward, next_observation, done = zip(* batch)
-        return np.concatenate(observation, 0), action, reward, np.concatenate(next_observation, 0), done
-
-    def __len__(self):
-        return len(self.memory)
-
-
-class dueling_ddqn(nn.Module):
-    def __init__(self, observation_dim, action_dim):
-        super(dueling_ddqn, self).__init__()
-        self.observation_dim = observation_dim
-        self.action_dim = action_dim
-        self.fc = nn.Linear(self.observation_dim, 128)
-
-        self.adv_fc1 = nn.Linear(128, 128)
-        self.adv_fc2 = nn.Linear(128, self.action_dim)
-
-        self.value_fc1 = nn.Linear(128, 128)
-        self.value_fc2 = nn.Linear(128, 1)
-
-    def forward(self, observation):
-        feature = self.fc(observation)
-        advantage = self.adv_fc2(F.relu(self.adv_fc1(F.relu(feature))))
-        value = self.value_fc2(F.relu(self.value_fc1(F.relu(feature))))
-        return advantage + value - advantage.mean()
-
-    def act(self, observation, epsilon):
-        if random.random() > epsilon:
-            q_value = self.forward(observation)
-            action = q_value.max(1)[1].data[0].item()
-        else:
-            action = random.choice(list(range(self.action_dim)))
-        return action
-
-
 class D3QNAgent:
     def __init__(self, input_dim, output_dim, exploration=1000, soft_update_freq=200, train_freq=20, load_model=False,
                  training=True):
@@ -131,4 +84,54 @@ class D3QNAgent:
 
             if n_epi % self.soft_update_freq == 0:
                 self.target_net.load_state_dict(self.eval_net.state_dict())
+
+
+class replay_buffer(object):
+    def __init__(self, capacity):
+        self.capacity = capacity
+        self.memory = deque(maxlen=self.capacity)
+
+    def store(self, observation, action, reward, next_observation, done):
+        observation = np.expand_dims(observation, 0)
+        next_observation = np.expand_dims(next_observation, 0)
+        self.memory.append([observation, action, reward, next_observation, done])
+
+    def sample(self, batch_size):
+        batch = random.sample(self.memory, batch_size)
+        observation, action, reward, next_observation, done = zip(* batch)
+        return np.concatenate(observation, 0), action, reward, np.concatenate(next_observation, 0), done
+
+    def __len__(self):
+        return len(self.memory)
+
+
+class dueling_ddqn(nn.Module):
+    def __init__(self, observation_dim, action_dim):
+        super(dueling_ddqn, self).__init__()
+        self.observation_dim = observation_dim
+        self.action_dim = action_dim
+        self.fc = nn.Linear(self.observation_dim, 128)
+
+        self.adv_fc1 = nn.Linear(128, 128)
+        self.adv_fc2 = nn.Linear(128, self.action_dim)
+
+        self.value_fc1 = nn.Linear(128, 128)
+        self.value_fc2 = nn.Linear(128, 1)
+
+    def forward(self, observation):
+        feature = self.fc(observation)
+        advantage = self.adv_fc2(F.relu(self.adv_fc1(F.relu(feature))))
+        value = self.value_fc2(F.relu(self.value_fc1(F.relu(feature))))
+        return advantage + value - advantage.mean()
+
+    def act(self, observation, epsilon):
+        if random.random() > epsilon:
+            q_value = self.forward(observation)
+            action = q_value.max(1)[1].data[0].item()
+        else:
+            action = random.choice(list(range(self.action_dim)))
+        return action
+
+
+
 

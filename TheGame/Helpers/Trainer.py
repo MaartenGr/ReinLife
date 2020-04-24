@@ -1,9 +1,9 @@
-from TheGame.World.Environment import Environment
+from TheGame.World.environment import Environment
 from tqdm import tqdm
 
 
 def trainer(brains, n_episodes=10_000, width=30, height=30, visualize_results=False, google_colab=False,
-            print_interval=500, max_agents=100, render=False, families=True, training=True, save=True):
+            print_interval=500, max_agents=100, render=False, static_families=True, training=True, save=True):
     """ Automatically trains the models for n_episodes
 
     Parameters:
@@ -53,7 +53,7 @@ def trainer(brains, n_episodes=10_000, width=30, height=30, visualize_results=Fa
     """
 
     env = Environment(width=width, height=height, evolution=True, max_agents=max_agents, brains=brains, grid_size=24,
-                      families=families, print_interval=print_interval, interactive_results=visualize_results,
+                      static_families=static_families, print_interval=print_interval, interactive_results=visualize_results,
                       google_colab=google_colab, training=training)
     env.reset()
 
