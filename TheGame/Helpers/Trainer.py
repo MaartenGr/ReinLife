@@ -3,7 +3,8 @@ from tqdm import tqdm
 
 
 def trainer(brains, n_episodes=10_000, width=30, height=30, visualize_results=False, google_colab=False,
-            print_interval=500, max_agents=100, render=False, static_families=True, training=True, save=True):
+            print_interval=500, max_agents=100, render=False, static_families=True, training=True, save=True,
+            limit_reproduction=False):
     """ Automatically trains the models for n_episodes
 
     Parameters:
@@ -44,6 +45,9 @@ def trainer(brains, n_episodes=10_000, width=30, height=30, visualize_results=Fa
     training : boolean, default True
         Whether you want to train using the settings above or simply show the result.
 
+    limit_reproduction : bool, default False
+        If False, agents can reproduce indefinitely. If True, all agents can only reproduce once.
+
     Returns:
     --------
     env : gym.env
@@ -54,7 +58,7 @@ def trainer(brains, n_episodes=10_000, width=30, height=30, visualize_results=Fa
 
     env = Environment(width=width, height=height, max_agents=max_agents, brains=brains, grid_size=24,
                       static_families=static_families, print_interval=print_interval, interactive_results=visualize_results,
-                      google_colab=google_colab, training=training)
+                      google_colab=google_colab, training=training, limit_reproduction=limit_reproduction)
     env.reset()
 
     for n_epi in tqdm(range(n_episodes+1)):

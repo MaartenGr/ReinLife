@@ -1,0 +1,7 @@
+{
+    "print interval": 300,
+    "width": 30,
+    "height": 30,
+    "max agents": 100,
+    "families": true
+}

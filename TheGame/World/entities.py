@@ -131,7 +131,6 @@ class SuperFood(BasicFood):
 class Agent(Entity):
     """ Represents an Agent that learns and thinks for itself
 
-
     Parameters:
     -----------
     coordinates : Collection[int], default (None, None)
@@ -238,3 +237,9 @@ class Agent(Entity):
 
             elif self.brain.method == "PPO":
                 torch.save(self.brain.agent.state_dict(), f"{path}.pt")
+
+    def can_reproduce(self) -> bool:
+        """ Returns whether the entity can reproduce """
+        if not self.dead and not self.reproduced and self.age > 5:
+            return True
+        return False

@@ -1,6 +1,6 @@
 import random
 import copy
-from typing import List, Type, Union
+from typing import List, Type, Union, Collection
 import numpy as np
 
 # Custom packages
@@ -60,6 +60,9 @@ class Environment:
 
     pastel_colors : bool, default False
         Whether to use pastel colors for rendering the agents in the pygame simulation
+
+    limit_reproduction : bool, default False
+        If False, agents can reproduce indefinitely. If True, all agents can only reproduce once.
     """
 
     def __init__(self,
@@ -74,7 +77,8 @@ class Environment:
                  google_colab: bool = False,
                  training: bool = True,
                  save: bool = False,
-                 pastel_colors: bool = False):
+                 pastel_colors: bool = False,
+                 limit_reproduction: bool = False):
 
         # Coordinate information
         self.width = width
@@ -92,13 +96,14 @@ class Environment:
 
         # Statistics
         self.max_agents = max_agents
-        self.max_genes = len(brains)
+        self.max_gene = len(brains)
 
         # Options
         self.static_families = static_families
         self.google_colab = google_colab
         self.save = save
         self.training = training
+        self.limit_reproduction = limit_reproduction
 
         # Not used, but helps in understanding the environment
         self.action_space = 8
@@ -127,7 +132,7 @@ class Environment:
         * Since nothing has happened so far, all entities state is equal to their state'
         """
         self.grid = Grid(self.width, self.height)
-        self.agents = [self._add_agent(random_loc=True, brain=self.brains[i], gene=i) for i in range(self.max_genes)]
+        self.agents = [self._add_agent(random_loc=True, brain=self.brains[i], gene=i) for i in range(self.max_gene)]
         self.best_agents = [copy.deepcopy(self.agents[0]) for _ in range(10) if not self.static_families]
 
         # Initialize all food
@@ -135,12 +140,9 @@ class Environment:
         self._init_food(Poison, probability=0.05)
         self._init_food(SuperFood)
 
-        # Get observation for all entities
-        obs, _ = self._get_observations()
-
-        # Update states of agents
-        for agent in self.agents:
-            agent.state = agent.state_prime
+        # Get observation for all entities and update their states
+        self._get_observations()
+        self._update_agents_state()
 
     def step(self):
         """ Move the environment one step
@@ -170,22 +172,6 @@ class Environment:
         self._add_food()
         self._get_observations()
 
-    def render(self, fps: int = 10) -> bool:
-        """ Render the game using pygame
-
-        Parameters:
-        -----------
-        fps : int, default 10
-            The frames per second to render pygame in
-
-        Returns:
-        --------
-        bool
-            If True, then you have clicked X on the pygame screen and the render will stop.
-            If False, keep rendering.
-        """
-        return self.viz.render(self.agents, self.grid, fps=fps)
-
     def update_env(self, n_epi: int = 0):
         """ Update the environment
 
@@ -207,50 +193,90 @@ class Environment:
         if self.training:
             self.tracker.update_results(self.agents, n_epi)
 
-        if not self.static_families:
-            self._update_best_agents()
-
+        self._update_best_agents()
         self.agents = self.grid.get_entities(self.entities.agent)
         self._reproduce()
         self._produce()
         self._remove_dead_agents()
+        self._get_observations()
+        self._update_agents_state()
 
-        obs, _ = self._get_observations()
+    def render(self, fps: int = 10) -> bool:
+        """ Render the game using pygame
 
-        for agent in self.agents:
-            agent.state = agent.state_prime
+        Parameters:
+        -----------
+        fps : int, default 10
+            The frames per second to render pygame in
+
+        Returns:
+        --------
+        bool
+            If True, then you have clicked X on the pygame screen and the render will stop.
+            If False, keep rendering.
+        """
+        return self.viz.render(self.agents, self.grid, fps=fps)
 
     def save_results(self):
-        """ Save the results of the experiment. For more information see TheGame.Helpers.Saver """
-        saver = Saver('Experiments', google_colab=self.google_colab)
-        settings = {"print interval": self.tracker.print_interval,
-                    "width": self.width,
-                    "height": self.height,
-                    "max agents": self.max_agents,
-                    "families": self.static_families}
+        """ Save the results of the experiment. For more information see TheGame.Helpers.Saver
 
+        Each experiment is defined by the date of saving the models and an additional "_V1" if multiple
+        experiments were performed on the same day. Within each experiment, each model is saved into a
+        directory of its model class, for example PPO, PERD3QN, and DQN. Then, each model is saved as
+        "brain_x.pt" where x is simply the sequence in which it is saved.
+        """
         fig = self.tracker.fig if not self.google_colab else None
+        saver = Saver('Experiments', google_colab=self.google_colab)
+        settings = {"Print interval": self.tracker.print_interval,
+                    "Width": self.width,
+                    "Height": self.height,
+                    "Max agents": self.max_agents,
+                    "Families": self.static_families}
+
         if self.static_families:
             saver.save([Agent(gene=gene, brain=brain) for gene, brain in enumerate(self.brains)], self.static_families,
                        self.tracker.results, settings, fig)
         else:
             saver.save(self.best_agents, self.static_families, self.tracker.results, settings, fig)
 
-    def _update_death_status(self):
-        """ Update death status of all agents"""
+    def _act(self):
+        """ Each agents executes its actions and its health is reduced each step
+
+        Before an agent performs its actions, its health is reduced and its age increased.
+
+        Then, each agent can execute one of eight actions:
+            * Move left, right, up, down
+            * Attack left, right, up, down
+        """
+        self.agents = self.grid.get_entities(self.entities.agent)
         for agent in self.agents:
-            if agent.health <= 0 or agent.age == agent.max_age:
-                agent.dead = True
+            agent.health = min(200, agent.health - 10)
+            agent.age = min(agent.max_age, agent.age + 1)
+            agent.reset_killed()
+
+        self._attack()
+        self._prepare_movement()
+        self._execute_movement()
 
     def _get_rewards(self):
-        """ Extract reward and whether the game has finished """
+        """ Extract the reward of each agent based on the following formula:
 
+         If the agent is dead:
+            reward = (-1 * alive_agents) + nr_kin_alive
+
+         If the agent is the only one alive:
+            reward = 0
+
+        If the agent is not the only one alive:
+            reward = nr_kin_alive / alive_agents
+
+        An additional 0.2 points is added for each kill the agent makes.
+        """
         for agent in self.agents:
             info = ""
             done = False
 
-            nr_kin_alive = max(0, sum([1 for other_agent in self.agents if
-                                       not other_agent.dead and
+            nr_kin_alive = max(0, sum([1 for other_agent in self.agents if not other_agent.dead and
                                        agent.gene == other_agent.gene]) - 1)
             alive_agents = sum([1 for other_agent in self.agents if not other_agent.dead])
 
@@ -268,69 +294,23 @@ class Environment:
 
             agent.update_rl_stats(reward, done, info)
 
-    def _act(self):
-        """ Make the agents act and reduce its health with each step """
-        self.agents = self.grid.get_entities(self.entities.agent)
-        for agent in self.agents:
-            agent.health = min(200, agent.health - 10)
-            agent.age = min(agent.max_age, agent.age + 1)
-            agent.reset_killed()
-
-        self._attack()  # To do: first attack, then move!
-        self._prepare_movement()
-        self._execute_movement()
-
-    def _add_agent(self, coordinates=None, brain=None, gene=None, random_loc=False, p=1):
-        """ Add agent, if random_loc then add at a random location with probability p """
-        if random_loc:
-            return self.grid.set_random(Agent, p=p, brain=brain, gene=gene)
-        else:
-            return self.grid.set(coordinates[0], coordinates[1], Agent, brain=brain, gene=gene)
-
-    def _reproduce(self):
-        """ Reproduce if old enough """
-        for agent in self.agents:
-            if not agent.dead and not agent.reproduced:
-                if len(self.agents) <= self.max_agents and random.random() > 0.95 and agent.age > 5:
-
-                    new_brain = agent.brain
-                    if self.static_families:
-                        new_brain = self.brains[agent.gene]
-
-                    coordinates = self._get_empty_within_fov(agent)
-                    if coordinates:
-                        self._add_agent(coordinates=coordinates[random.randint(0, len(coordinates) - 1)],
-                                        brain=new_brain, gene=agent.gene)
-                    else:
-                        self._add_agent(random_loc=True, brain=new_brain, gene=agent.gene)
-
-    def _produce(self):
-        """ Randomly produce new agent if too little agents are alive """
-        if len(self.agents) <= self.max_agents + 1 and random.random() > 0.95:
-
-            if self.static_families:
-                gene = random.choice([x for x in range(len(self.brains))])
-                brain = self.brains[gene]
-                self._add_agent(random_loc=True, brain=brain, gene=gene)
-
-            else:
-                best_agent = random.choice(self.best_agents)
-                brain = copy.deepcopy(best_agent.brain)
-                self.max_genes += 1
-                agent = self._add_agent(random_loc=True, brain=brain, gene=self.max_genes)
-                if agent:
-                    agent.scramble_brain()
-
-    def _remove_dead_agents(self):
-        """ Remove dead agent from grid """
-        for agent in self.agents:
-            if agent.dead:
-                self.grid.grid[agent.i, agent.j] = Food((agent.i, agent.j))
-
     def _get_observations(self):
-        """ Get the observation (fov) for each agent """
+        """ Get the observation (fov) for each agent
+
+        An observation or field of view for an agents
+
+
+        [0] [0] [0] [0] [0] [0] [0]
+        [0] [0] [0] [0] [0] [0] [0]
+        [0] [0] [0] [0] [0] [0] [0]
+        [0] [0] [0] [0] [0] [0] [0]
+        [0] [0] [0] [0] [0] [0] [0]
+        [0] [0] [0] [0] [0] [0] [0]
+        [0] [0] [0] [0] [0] [0] [0]
+
+
+        """
         self.agents = self.grid.get_entities(self.entities.agent)
-        observations = []
 
         for agent in self.agents:
 
@@ -361,9 +341,76 @@ class Environment:
             if agent.age == 0:
                 agent.state = fov
             agent.state_prime = fov
-            observations.append(fov)
 
-        return observations, None
+    def _add_agent(self,
+                   coordinates: Collection[int] = None,
+                   brain: BasicBrain = None,
+                   gene: int = None,
+                   random_loc: bool = False,
+                   p: float = 1.):
+        """ Add agent, if random_loc then add at a random location with probability p
+
+        Parameters:
+        -----------
+        coordinates : Collection[int], default (None, None)
+            The i and j coordinates (2d) of the empty space.
+
+        brain : BasicBrain, default None
+            The brain of the agent.
+
+        gene : int, default None
+            The gene of the Agent which represents to which family it belongs
+
+        random_loc : bool, default False
+            Sets agent at random location if True, otherwise use coordinates
+
+        p : float, default 1.
+            The probability of adding an agent
+        """
+        if random_loc:
+            return self.grid.set_random(Agent, p=p, brain=brain, gene=gene)
+        else:
+            return self.grid.set(coordinates[0], coordinates[1], Agent, brain=brain, gene=gene)
+
+    def _reproduce(self):
+        """ Checks, for each agent, whether it will reproduce and places an offspring close to the agent """
+        for agent in self.agents:
+            if agent.can_reproduce() and len(self.agents) <= self.max_agents and random.random() > 0.95:
+
+                    # Create new brain
+                    if self.static_families:
+                        new_brain = self.brains[agent.gene]
+                    else:
+                        new_brain = agent.brain
+
+                    # Add offspring close to parent
+                    coordinates = self._get_empty_within_fov(agent)
+                    if coordinates:
+                        self._add_agent(coordinates=coordinates[random.randint(0, len(coordinates) - 1)],
+                                        brain=new_brain, gene=agent.gene)
+                    else:
+                        self._add_agent(random_loc=True, brain=new_brain, gene=agent.gene)
+
+                    # Limit reproduction
+                    if self.limit_reproduction:
+                        agent.reproduced = True
+
+    def _produce(self):
+        """ Randomly produce new agent if too little agents are alive """
+        if len(self.agents) <= self.max_agents + 1 and random.random() > 0.95:
+
+            # Choose random brain from initialized brains
+            if self.static_families:
+                gene = random.choice([x for x in range(len(self.brains))])
+                self._add_agent(random_loc=True, brain=self.brains[gene], gene=gene)
+
+            # Choose brain from best agents that were alive
+            else:
+                self.max_gene += 1
+                new_brain = copy.deepcopy(random.choice(self.best_agents).brain)
+                agent = self._add_agent(random_loc=True, brain=new_brain, gene=self.max_gene)
+                if agent:
+                    agent.scramble_brain()
 
     def _get_food(self, obj):
         """ Return 1 for food -1 for poison and 0 for everything else, 1 is returned if agent dies """
@@ -533,12 +580,6 @@ class Environment:
             agent.max_age = int(agent.max_age * 1.2)
             agent.ate_berry = 1.
 
-    def _update_agent_position(self, agent):
-        """ Update position of an agent in the grid """
-        self.grid.grid[agent.i, agent.j] = Empty((agent.i, agent.j))
-        self.grid.grid[agent.i_target, agent.j_target] = agent
-        agent.move()
-
     def _get_impossible_coordinates(self):
         """ Returns coordinates of coordinates where multiple agents want to go """
         target_coordinates = [agent.target_coordinates for agent in self.agents]
@@ -552,15 +593,16 @@ class Environment:
 
     def _update_best_agents(self):
         """ Update best agents, replace weakest if a better is found """
-        min_fitness_idx = int(np.argmin([agent.fitness for agent in self.best_agents]))
-        min_fitness = self.best_agents[min_fitness_idx].fitness
+        if not self.static_families:
+            min_fitness_idx = int(np.argmin([agent.fitness for agent in self.best_agents]))
+            min_fitness = self.best_agents[min_fitness_idx].fitness
 
-        if self.agents:
-            max_fitness_idx = int(np.argmax([agent.fitness for agent in self.agents]))
-            max_fitness = self.agents[max_fitness_idx].fitness
+            if self.agents:
+                max_fitness_idx = int(np.argmax([agent.fitness for agent in self.agents]))
+                max_fitness = self.agents[max_fitness_idx].fitness
 
-            if self.agents[max_fitness_idx] not in self.best_agents and max_fitness > min_fitness:
-                self.best_agents[min_fitness_idx] = self.agents[max_fitness_idx]
+                if self.agents[max_fitness_idx] not in self.best_agents and max_fitness > min_fitness:
+                    self.best_agents[min_fitness_idx] = self.agents[max_fitness_idx]
 
     def _init_food(self, entity: Union[Type[Food], Type[Poison], Type[SuperFood]],
                    probability: float = 0.1):
@@ -598,3 +640,26 @@ class Environment:
 
         if len(np.where(self.grid.get_numpy() == self.entities.super_food)[0]) == 0:
             self.grid.set_random(SuperFood, p=1)
+
+    def _update_agent_position(self, agent):
+        """ Update position of an agent in the grid """
+        self.grid.grid[agent.i, agent.j] = Empty((agent.i, agent.j))
+        self.grid.grid[agent.i_target, agent.j_target] = agent
+        agent.move()
+
+    def _update_agents_state(self):
+        """ Make sure agents' current state is the same as the new state """
+        for agent in self.agents:
+            agent.state = agent.state_prime
+
+    def _update_death_status(self):
+        """ Update death status of all agents"""
+        for agent in self.agents:
+            if agent.health <= 0 or agent.age == agent.max_age:
+                agent.dead = True
+
+    def _remove_dead_agents(self):
+        """ Remove dead agent from grid """
+        for agent in self.agents:
+            if agent.dead:
+                self.grid.grid[agent.i, agent.j] = Food((agent.i, agent.j))
