@@ -8,20 +8,48 @@ import torch.optim as optim
 import torch.nn as nn
 import torch.nn.functional as F
 
+from .utils import BasicBrain
+
 # Hyperparameters
 gamma = 0.98
 buffer_limit = 50000
 batch_size = 32
 
 
-class DQNAgent:
-    def __init__(self, input_dim, max_epi, learning_rate=0.0005, train_freq=20, load_model=False, training=True):
+class DQNAgent(BasicBrain):
+    """ Deep Q Network
+
+    Parameters:
+    -----------
+    input_dim : int
+        The input dimension
+
+    output_dim : int
+        The output dimension
+
+    max_epi : int
+        The number of episodes for which to train the agent
+
+    train_freq : int, default 20
+        The frequency at which to train the agent
+
+    learning_rate : float, default 0.0005
+        Learning rate
+
+    load_model : str, default False
+        Path to an existing model
+
+    training : bool, default True,
+        Whether to continue training or not
+    """
+    def __init__(self, input_dim, output_dim, max_epi, learning_rate=0.0005, train_freq=20,
+                 load_model=False, training=True):
+        super().__init__(input_dim, output_dim, "DQN")
         self.agent = Qnet(input_dim)
         self.target = Qnet(input_dim)
         self.target.load_state_dict(self.agent.state_dict())
         self.memory = ReplayBuffer()
         self.optimizer = optim.Adam(self.agent.parameters(), lr=learning_rate)
-        self.method = 'DQN'
         self.max_epi = max_epi
         self.epsilon = 0.20
         self.train_freq = train_freq
@@ -57,7 +85,7 @@ class DQNAgent:
     def learn(self, age, dead, action, state, reward, state_prime, done):
         self.memorize(state, action, reward, state_prime, done)
 
-        if age % 20 == 0 or dead:
+        if age % self.train_freq == 0 or dead:
             self.train()
 
 

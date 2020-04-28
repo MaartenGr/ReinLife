@@ -215,7 +215,7 @@ class Agent(Entity):
     def get_action(self, n_epi: int):
         """ Extracts the action """
         if self.brain.method == "PPO":
-            self.action, self.prob = self.brain.get_action(self.state, n_epi)
+            self.action, self.prob = self.brain.get_action(self.state)
         else:
             self.action = self.brain.get_action(self.state, n_epi)
 
@@ -237,7 +237,7 @@ class Agent(Entity):
                 torch.save(self.brain.eval_net.state_dict(), f"{path}.pt")
 
             elif self.brain.method == "PPO":
-                torch.save(self.brain.agent.state_dict(), f"{path}.pt")
+                torch.save(self.brain.model.state_dict(), f"{path}.pt")
 
     def can_reproduce(self) -> bool:
         """ Returns whether the entity can reproduce """

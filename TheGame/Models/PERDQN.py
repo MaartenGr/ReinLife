@@ -7,190 +7,99 @@ import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
 from torch.autograd import Variable
-
-# SumTree
-# a binary tree data structure where the parent’s value is the sum of its children
-class SumTree:
-    write = 0
-
-    def __init__(self, capacity):
-        self.capacity = capacity
-        self.tree = np.zeros(2 * capacity - 1)
-        self.data = np.zeros(capacity, dtype=object)
-        self.n_entries = 0
-
-    # update to the root node
-    def _propagate(self, idx, change):
-        parent = (idx - 1) // 2
-
-        self.tree[parent] += change
-
-        if parent != 0:
-            self._propagate(parent, change)
-
-    # find sample on leaf node
-    def _retrieve(self, idx, s):
-        left = 2 * idx + 1
-        right = left + 1
-
-        if left >= len(self.tree):
-            return idx
-
-        if s <= self.tree[left]:
-            return self._retrieve(left, s)
-        else:
-            return self._retrieve(right, s - self.tree[left])
-
-    def total(self):
-        return self.tree[0]
-
-    # store priority and sample
-    def add(self, p, data):
-        idx = self.write + self.capacity - 1
-
-        self.data[self.write] = data
-        self.update(idx, p)
-
-        self.write += 1
-        if self.write >= self.capacity:
-            self.write = 0
-
-        if self.n_entries < self.capacity:
-            self.n_entries += 1
-
-    # update priority
-    def update(self, idx, p):
-        change = p - self.tree[idx]
-
-        self.tree[idx] = p
-        self._propagate(idx, change)
-
-    # get priority and sample
-    def get(self, s):
-        idx = self._retrieve(0, s)
-        dataIdx = idx - self.capacity + 1
-
-        return (idx, self.tree[idx], self.data[dataIdx])
-
-class Memory:  # stored as ( s, a, r, s_ ) in SumTree
-    e = 0.01
-    a = 0.6
-    beta = 0.4
-    beta_increment_per_sampling = 0.001
-
-    def __init__(self, capacity):
-        self.tree = SumTree(capacity)
-        self.capacity = capacity
-
-    def _get_priority(self, error):
-        return (np.abs(error) + self.e) ** self.a
-
-    def add(self, error, sample):
-        p = self._get_priority(error)
-        self.tree.add(p, sample)
-
-    def sample(self, n):
-        batch = []
-        idxs = []
-        segment = self.tree.total() / n
-        priorities = []
-
-        self.beta = np.min([1., self.beta + self.beta_increment_per_sampling])
-
-        for i in range(n):
-            a = segment * i
-            b = segment * (i + 1)
-            while True:
-                s = random.uniform(a, b)
-                (idx, p, data) = self.tree.get(s)
-                if not isinstance(data, int):
-                    break
-            priorities.append(p)
-            batch.append(data)
-            idxs.append(idx)
-
-        sampling_probabilities = priorities / self.tree.total()
-        is_weight = np.power(self.tree.n_entries * sampling_probabilities, -self.beta)
-        is_weight /= is_weight.max()
-
-        return batch, idxs, is_weight
-
-    def update(self, idx, error):
-        p = self._get_priority(error)
-        self.tree.update(idx, p)
+from typing import Any
+from .utils import BasicBrain
 
 
-# approximate Q function using Neural Network
-# state is input and Q Value of each action is output of network
-class DQN(nn.Module):
-    def __init__(self, state_size, action_size):
-        super(DQN, self).__init__()
-        self.fc = nn.Sequential(
-            nn.Linear(state_size, 64),
-            nn.ReLU(),
-            nn.Linear(64, 64),
-            nn.ReLU(),
-            nn.Linear(64, action_size)
-        )
+class PERDQNAgent(BasicBrain):
+    """ Prioritized Experience Replay Deep Q Network
 
-    def forward(self, x):
-        return self.fc(x)
+    Parameters:
+    -----------
+    input_dim : int
+        The input dimension
 
+    output_dim : int
+        The output dimension
 
-# DQN Agent for the Cartpole
-# it uses Neural Network to approximate q function
-# and prioritized experience replay memory & target q network
-class PERDQNAgent:
-    def __init__(self, state_size, action_size, load_model=False):
-        # if you want to see Cartpole learning, then change to True
-        self.render = False
-        self.method = "PERDQN"
+    explore_step : int, default 5_000
+        The number of epochs until which to decrease epsilon
+
+    train_freq : int, default 20
+        The frequency at which to train the agent
+
+    learning_rate : float, default 0.001
+        Learning rate
+
+    batch_size : int
+        The number of training samples to work through before the model's internal parameters are updated.
+
+    gamma : float, default 0.98
+        Discount factor. How far out should rewards in the future influence the policy?
+
+    capacity : int, default 10_000
+        Capacity of replay buffer
+
+    load_model : str, default False
+        Path to an existing model
+
+    training : bool, default True,
+        Whether to continue training or not
+    """
+    def __init__(self, input_dim, output_dim, explore_step=5_000, train_freq=20, learning_rate=0.001, batch_size=64,
+                 gamma=0.99, capacity=20000, load_model=False, training=True):
+        super().__init__(input_dim, output_dim, "PERDQN")
 
         # get size of state and action
-        self.state_size = state_size
-        self.action_size = action_size
+        self.state_size = input_dim
+        self.action_size = output_dim
 
         # These are hyper parameters for the DQN
-        self.discount_factor = 0.99
-        self.learning_rate = 0.001
-        self.memory_size = 20000
+        self.discount_factor = gamma
+        self.learning_rate = learning_rate
+        self.memory_size = capacity
         self.epsilon = 1.0
         self.epsilon_min = 0.01
-        self.explore_step = 5000
+        self.explore_step = explore_step
         self.epsilon_decay = (self.epsilon - self.epsilon_min) / self.explore_step
-        self.batch_size = 64
+        self.batch_size = batch_size
         self.train_start = 1000
+        self.training = training
+        self.train_freq = train_freq
 
         # create prioritized replay memory using SumTree
         self.memory = Memory(self.memory_size)
 
         # create main model and target model
-        self.model = DQN(state_size, action_size)
+        self.model = DQN(input_dim, output_dim)
         self.model.apply(self.weights_init)
-        self.target_model = DQN(state_size, action_size)
+        self.target_model = DQN(input_dim, output_dim)
         self.optimizer = optim.Adam(self.model.parameters(),
                                     lr=self.learning_rate)
 
         # initialize target model
         self.update_target_model()
 
+        self.training = training
+        if not self.training:
+            self.epsilon = 0
+
         if load_model:
             self.model.load_state_dict(torch.load(load_model))
             self.model.eval()
-            self.epsilon = 0.0
 
-    # weight xavier initialize
     def weights_init(self, m):
+        """ Weight xavier initialize """
         classname = m.__class__.__name__
         if classname.find('Linear') != -1:
             torch.nn.init.xavier_uniform(m.weight)
 
-    # after some time interval update the target model to be same with model
     def update_target_model(self):
+        """ After some time interval update the target model to be same with model """
         self.target_model.load_state_dict(self.model.state_dict())
 
-    # get action from model using epsilon-greedy policy
     def get_action(self, state, n_epi):
+        """ Get action from model using epsilon-greedy policy """
         state = np.reshape(state, [1, self.state_size])
         if np.random.rand() <= self.epsilon:
             return random.randrange(self.action_size)
@@ -201,8 +110,8 @@ class PERDQNAgent:
             _, action = torch.max(q_value, 1)
             return int(action)
 
-    # save sample (error,<s,a,r,s'>) to the replay memory
     def append_sample(self, state, action, reward, next_state, done):
+        """ Save sample (error,<s,a,r,s'>) to the replay memory """
         state = np.reshape(state, [1, self.state_size])
         next_state = np.reshape(next_state, [1, self.state_size])
 
@@ -218,8 +127,8 @@ class PERDQNAgent:
 
         self.memory.add(error, (state, action, reward, next_state, done))
 
-    # pick samples from prioritized replay memory (with batch_size)
     def train_model(self):
+        """ Pick samples from prioritized replay memory (with batch_size) """
         if self.epsilon > self.epsilon_min:
             self.epsilon -= self.epsilon_decay
 
@@ -279,8 +188,142 @@ class PERDQNAgent:
     def learn(self, age, dead, action, state, reward, state_prime, done):
         self.append_sample(state, action, reward, state_prime, done)
 
-        if age % 20 == 0 or dead:
+        if age % self.train_freq == 0 or dead:
             if self.memory.tree.n_entries >= self.train_start:
                 self.train_model()
 
             self.update_target_model()
+
+
+class SumTree:
+    """ A binary tree data structure where the parent’s value is the sum of its children """
+    write = 0
+
+    def __init__(self, capacity):
+        self.capacity = capacity
+        self.tree = np.zeros(2 * capacity - 1)
+        self.data = np.zeros(capacity, dtype=object)
+        self.n_entries = 0
+
+    # update to the root node
+    def _propagate(self, idx, change):
+        parent = (idx - 1) // 2
+
+        self.tree[parent] += change
+
+        if parent != 0:
+            self._propagate(parent, change)
+
+    # find sample on leaf node
+    def _retrieve(self, idx, s):
+        left = 2 * idx + 1
+        right = left + 1
+
+        if left >= len(self.tree):
+            return idx
+
+        if s <= self.tree[left]:
+            return self._retrieve(left, s)
+        else:
+            return self._retrieve(right, s - self.tree[left])
+
+    def total(self):
+        return self.tree[0]
+
+    # store priority and sample
+    def add(self, p, data):
+        idx = self.write + self.capacity - 1
+
+        self.data[self.write] = data
+        self.update(idx, p)
+
+        self.write += 1
+        if self.write >= self.capacity:
+            self.write = 0
+
+        if self.n_entries < self.capacity:
+            self.n_entries += 1
+
+    # update priority
+    def update(self, idx, p):
+        change = p - self.tree[idx]
+
+        self.tree[idx] = p
+        self._propagate(idx, change)
+
+    # get priority and sample
+    def get(self, s):
+        idx = self._retrieve(0, s)
+        data_idx = idx - self.capacity + 1
+
+        return idx, self.tree[idx], self.data[data_idx]
+
+
+class Memory:
+    """ Stored as ( s, a, r, s_ ) in SumTree"""
+    e = 0.01
+    a = 0.6
+    beta = 0.4
+    beta_increment_per_sampling = 0.001
+
+    def __init__(self, capacity):
+        self.tree = SumTree(capacity)
+        self.capacity = capacity
+
+    def _get_priority(self, error):
+        return (np.abs(error) + self.e) ** self.a
+
+    def add(self, error, sample):
+        p = self._get_priority(error)
+        self.tree.add(p, sample)
+
+    def sample(self, n):
+        batch = []
+        idxs = []
+        segment = self.tree.total() / n
+        priorities = []
+
+        self.beta = np.min([1., self.beta + self.beta_increment_per_sampling])
+
+        for i in range(n):
+            a = segment * i
+            b = segment * (i + 1)
+            while True:
+                s = random.uniform(a, b)
+                (idx, p, data) = self.tree.get(s)
+                if not isinstance(data, int):
+                    break
+            priorities.append(p)
+            batch.append(data)
+            idxs.append(idx)
+
+        sampling_probabilities = priorities / self.tree.total()
+        is_weight = np.power(self.tree.n_entries * sampling_probabilities, -self.beta)
+        is_weight /= is_weight.max()
+
+        return batch, idxs, is_weight
+
+    def update(self, idx, error):
+        p = self._get_priority(error)
+        self.tree.update(idx, p)
+
+
+class DQN(nn.Module):
+    def __init__(self, state_size, action_size):
+        super(DQN, self).__init__()
+        self.fc = nn.Sequential(
+            nn.Linear(state_size, 64),
+            nn.ReLU(),
+            nn.Linear(64, 64),
+            nn.ReLU(),
+            nn.Linear(64, action_size)
+        )
+
+    def forward(self, x):
+        return self.fc(x)
+
+    def __call__(self, *args, **kwargs) -> Any:
+        """ Necessary to remove linting problem in class above: https://github.com/pytorch/pytorch/issues/24326 """
+        return super().__call__(*args, **kwargs)
+
+

@@ -4,24 +4,52 @@ import numpy as np
 from keras.layers import Dense
 from keras.models import Sequential
 from keras.optimizers import Adam
+from .utils import BasicBrain
 
 
-class A2CAgent:
-    def __init__(self, state_size, action_size, load_model=False):
-        # if you want to see Cartpole learning, then change to True
-        self.render = False
+class A2CAgent(BasicBrain):
+    """ Actor 2 Critic
+
+    Parameters:
+    -----------
+    input_dim : int
+        The input dimension
+
+    output_dim : int
+        The output dimension
+
+    train_freq : int, default 20
+        The frequency at which to train the agent
+
+    actor_learning_rate : float, default 0.001
+        Learning rate
+
+    critic_learning_rate : float, default 0.005
+        Learning rate
+
+    gamma : float, default 0.98
+        Discount factor. How far out should rewards in the future influence the policy?
+
+    load_model : str, default False
+        Path to an existing model
+
+    training : bool, default True,
+        Whether to continue training or not
+    """
+    def __init__(self, input_dim, output_dim, train_freq=20, gamma=0.99, actor_learning_rate=0.001,
+                 critic_learning_rate=0.005,
+                 load_model=False):
+        super().__init__(input_dim, output_dim, "A2C")
         self.load_model = load_model
-        # get size of state and action
-        self.state_size = state_size
-        self.action_size = action_size
+        self.state_size = input_dim
+        self.action_size = output_dim
         self.value_size = 1
-
-        self.method = 'A2C'
+        self.train_freq = train_freq
 
         # These are hyper parameters for the Policy Gradient
-        self.discount_factor = 0.99
-        self.actor_lr = 0.001
-        self.critic_lr = 0.005
+        self.discount_factor = gamma
+        self.actor_lr = actor_learning_rate
+        self.critic_lr = critic_learning_rate
 
         # create model for policy network
         self.actor = self.build_actor()
@@ -36,7 +64,7 @@ class A2CAgent:
     # actor: state is input and probability of each action is output of model
     def build_actor(self):
         actor = Sequential()
-        actor.add(Dense(24, input_dim=self.state_size, activation='relu',
+        actor.add(Dense(128, input_dim=self.state_size, activation='relu',
                         kernel_initializer='he_uniform'))
         actor.add(Dense(self.action_size, activation='softmax',
                         kernel_initializer='he_uniform'))
@@ -49,7 +77,7 @@ class A2CAgent:
     # critic: state is input and value of state is output of model
     def build_critic(self):
         critic = Sequential()
-        critic.add(Dense(24, input_dim=self.state_size, activation='relu',
+        critic.add(Dense(128, input_dim=self.state_size, activation='relu',
                          kernel_initializer='he_uniform'))
         critic.add(Dense(self.value_size, activation='linear',
                          kernel_initializer='he_uniform'))
@@ -86,5 +114,5 @@ class A2CAgent:
 
     def learn(self, age, dead, state, action, reward, state_prime, done):
 
-        if age % 20 == 0 or dead:
+        if age % self.train_freq == 0 or dead:
             self.train_model(state, action, reward, state_prime, done)

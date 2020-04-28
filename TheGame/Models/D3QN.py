@@ -4,25 +4,63 @@ import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 import random
-import gym
 from collections import deque
+from.utils import BasicBrain
 
-gamma = 0.99
-learning_rate = 1e-3
-batch_size = 64
-capacity = 10000
+# gamma = 0.99
+# learning_rate = 1e-3
+# batch_size = 64
+# capacity = 10000
 
 
-class D3QNAgent:
-    def __init__(self, input_dim, output_dim, exploration=1000, soft_update_freq=200, train_freq=20, load_model=False,
-                 training=True):
+class D3QNAgent(BasicBrain):
+    """ Dueling Double Deep Q Network
+
+    Parameters:
+    -----------
+    input_dim : int
+        The input dimension
+
+    output_dim : int
+        The output dimension
+
+    exploration : int, default 1000
+        The number of epochs to explore the environment before learning
+
+    soft_update_freq : int, default 200
+        The frequency at which to align the target and eval nets
+
+    train_freq : int, default 20
+        The frequency at which to train the agent
+
+    learning_rate : float, default 1e-3
+        Learning rate
+
+    batch_size : int
+        The number of training samples to work through before the model's internal parameters are updated.
+
+    gamma : float, default 0.98
+        Discount factor. How far out should rewards in the future influence the policy?
+
+    capacity : int, default 10_000
+        Capacity of replay buffer
+
+    load_model : str, default False
+        Path to an existing model
+
+    training : bool, default True,
+        Whether to continue training or not
+    """
+    def __init__(self, input_dim, output_dim, exploration=1000, soft_update_freq=200, train_freq=20,
+                 learning_rate=1e-3, gamma=0.99, batch_size=64, capacity=10000, load_model=False, training=True):
+        super().__init__(input_dim, output_dim, "D3QN")
+
         self.target_net = dueling_ddqn(input_dim, output_dim)
         self.eval_net = dueling_ddqn(input_dim, output_dim)
         self.eval_net.load_state_dict(self.target_net.state_dict())
         self.optimizer = torch.optim.Adam(self.eval_net.parameters(), lr=learning_rate)
         self.buffer = replay_buffer(capacity)
         self.loss_fn = nn.MSELoss()
-        self.method = "D3QN"
         self.exploration = exploration
         self.soft_update_freq = soft_update_freq
         self.train_freq = train_freq
@@ -30,6 +68,8 @@ class D3QNAgent:
         self.epsilon = 0.9
         self.epsilon_min = 0.05
         self.decay = 0.99
+        self.batch_size = batch_size
+        self.gamma = gamma
 
         self.training = training
         if not self.training:
@@ -55,7 +95,7 @@ class D3QNAgent:
         self.buffer.store(obs, action, reward, next_obs, done)
 
     def train(self):
-        observation, action, reward, next_observation, done = self.buffer.sample(batch_size)
+        observation, action, reward, next_observation, done = self.buffer.sample(self.batch_size)
 
         observation = torch.FloatTensor(observation)
         action = torch.LongTensor(action)
@@ -67,7 +107,7 @@ class D3QNAgent:
         next_q_values = self.target_net.forward(next_observation)
         next_q_value = next_q_values.max(1)[0].detach()
         q_value = q_values.gather(1, action.unsqueeze(1)).squeeze(1)
-        expected_q_value = reward + gamma * (1 - done) * next_q_value
+        expected_q_value = reward + self.gamma * (1 - done) * next_q_value
 
         loss = self.loss_fn(q_value, expected_q_value)
 

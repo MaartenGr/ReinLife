@@ -4,12 +4,45 @@ import torch.nn.functional as F
 import numpy as np
 import random
 from collections import deque
+from.utils import BasicBrain
 
 
-class DRQNAgent:
-    def __init__(self, observation_dim=153, learning_rate=1e-3, capacity=10000, epsilon_init=0.9, gamma=0.99,
+class DRQNAgent(BasicBrain):
+    """ Deep Recurrent Q Network
+
+    Parameters:
+    -----------
+    input_dim : int
+        The input dimension
+
+    output_dim : int
+        The output dimension
+
+    train_freq : int, default 20
+        The frequency at which to train the agent
+
+    learning_rate : float, default 0.001
+        Learning rate
+
+    soft_update_freq : int, default 100
+        The frequency at which to align the target and eval nets
+
+    gamma : float, default 0.98
+        Discount factor. How far out should rewards in the future influence the policy?
+
+    capacity : int, default 10_000
+        Capacity of replay buffer
+
+    load_model : str, default False
+        Path to an existing model
+
+    training : bool, default True,
+        Whether to continue training or not
+    """
+    def __init__(self, input_dim=153, output_dim=8, learning_rate=1e-3, capacity=10000, gamma=0.99, train_freq=20,
                  soft_update_freq=100, load_model=False, training=True):
-        self.observation_dim = observation_dim
+        super().__init__(input_dim, output_dim, "DRQN")
+        self.observation_dim = input_dim
         self.action_dim = 8
         self.target_net = drqn_net(self.observation_dim, self.action_dim)
         self.eval_net = drqn_net(self.observation_dim, self.action_dim)
@@ -17,21 +50,24 @@ class DRQNAgent:
         self.optimizer = torch.optim.Adam(self.eval_net.parameters(), lr=learning_rate)
         self.buffer = recurrent_replay_buffer(capacity)
         self.loss_fn = nn.MSELoss()
-        self.epsilon = epsilon_init
+        self.epsilon = 0.9
         self.count = 0
         self.hidden = None
         self.gamma = gamma
         self.soft_update_freq = soft_update_freq
-        self.method = "DRQN"
         self.training = training
         self.epsilon_min = 0.05
         self.decay = 0.99
         self.n_epi = 0
+        self.train_freq = train_freq
+
+        self.training = training
+        if not self.training:
+            self.epsilon = 0
 
         if load_model:
             self.eval_net.load_state_dict(torch.load(load_model))
             self.eval_net.eval()
-            self.epsilon = 0
 
     def get_action(self, obs, n_epi):
         if self.training:
@@ -51,7 +87,7 @@ class DRQNAgent:
 
     def learn(self, age, dead, action, state, reward, state_prime, done, n_epi):
         self.memorize(state, action, reward / 200.0, state_prime, done)
-        if age % 20 == 0 or dead:
+        if age % self.train_freq == 0 or dead:
             self.train()
 
         if n_epi % self.soft_update_freq == 0:
