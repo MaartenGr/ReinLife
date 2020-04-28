@@ -1,10 +1,10 @@
 import random
 import copy
-from typing import List, Type, Union, Collection
+from typing import List, Type, Union, Collection, Tuple
 import numpy as np
 
 # Custom packages
-from .entities import Agent, Empty, Food, Poison, SuperFood
+from .entities import Agent, Empty, Food, Poison, SuperFood, Entity
 from .grid import Grid
 from .utils import Actions, EntityTypes
 from TheGame.Helpers.Tracker import Tracker
@@ -15,7 +15,6 @@ from TheGame.Models.utils import BasicBrain
 
 class Environment:
     """ The main environment in which agents act
-
 
     Parameters:
     -----------
@@ -63,6 +62,10 @@ class Environment:
 
     limit_reproduction : bool, default False
         If False, agents can reproduce indefinitely. If True, all agents can only reproduce once.
+
+    incentivize_killing : bool, default True
+        Whether to incentivize killing by giving a reward each time an agent has killed another, regardless
+        of whether they share kinship
     """
 
     def __init__(self,
@@ -78,7 +81,8 @@ class Environment:
                  training: bool = True,
                  save: bool = False,
                  pastel_colors: bool = False,
-                 limit_reproduction: bool = False):
+                 limit_reproduction: bool = False,
+                 incentivize_killing: bool = True):
 
         # Coordinate information
         self.width = width
@@ -104,6 +108,7 @@ class Environment:
         self.save = save
         self.training = training
         self.limit_reproduction = limit_reproduction
+        self.incentivize_killing = incentivize_killing
 
         # Not used, but helps in understanding the environment
         self.action_space = 8
@@ -289,65 +294,162 @@ class Environment:
             else:
                 reward = nr_kin_alive / alive_agents
 
-            if agent.killed:
+            if agent.killed and self.incentivize_killing:
                 reward += 0.2
 
             agent.update_rl_stats(reward, done, info)
 
     def _get_observations(self):
-        """ Get the observation (fov) for each agent
+        """ Get the observation (field of view) of each agent
 
-        An observation or field of view for an agents
+        The basic observational field of view of each agent consists of a square surrounding
+        the agent with a max distance of 3 (measured from the center horizontally):
 
+            [0] [0] [0] [0] [0] [0] [0]
+            [0] [0] [0] [0] [0] [0] [0]
+            [0] [0] [0] [0] [0] [0] [0]
+            [0] [0] [0] [0] [0] [0] [0]
+            [0] [0] [0] [0] [0] [0] [0]
+            [0] [0] [0] [0] [0] [0] [0]
+            [0] [0] [0] [0] [0] [0] [0]
 
-        [0] [0] [0] [0] [0] [0] [0]
-        [0] [0] [0] [0] [0] [0] [0]
-        [0] [0] [0] [0] [0] [0] [0]
-        [0] [0] [0] [0] [0] [0] [0]
-        [0] [0] [0] [0] [0] [0] [0]
-        [0] [0] [0] [0] [0] [0] [0]
-        [0] [0] [0] [0] [0] [0] [0]
-
-
+        Each value correspond then to the content of the grid where 0 typically means empty or not of interest.
+        In sum, the input to the neural net consists of the following observations:
+        * Food (7x7=49)
+            * A grid of zeros with shape 7x7, with the agent in the middle, where food has the value 0.5, superfood
+             a value of 1., and poison a value of -1
+        * Kinship (7x7=49)
+            * A grid of zeros with shape 7x7, with the agent in the middle, where a 1 corresponds to a related
+            agent and -1 to an unrelated agent
+        * Health (7x7=49)
+            * A grid of zeros with shape 7x7, with the agent in the middle, where each grid that contains an
+            agent shows its health divided by its max health
+        * Reproduced
+            * 1 if an agent has already reproduced and 0 otherwise
+        * Number genes
+            * The percentage of genes in the gene pool
+        * Percentage agents
+            * The percentage of agents that are alive compared to the maximum number possible
+        * Has killed
+            * Whether the agent has killed this episode
+        * Ate super food
+            * Whether the agent has eaten super food this episode
         """
         self.agents = self.grid.get_entities(self.entities.agent)
+        food_grid, health_grid, genes_grid = self._prepare_observations()
 
         for agent in self.agents:
+            food_obs = list(self.grid.fov(agent.i, agent.j, 3, food_grid).flatten())
+            health_obs = list(self.grid.fov(agent.i, agent.j, 3, health_grid).flatten())
+            genes_obs = self._extract_gene_observation(agent, genes_grid)
 
-            # Main observations
-            observation = self.grid.fov(agent.i, agent.j, 3)
+            percent_genes = sum([1 for other_agent in self.agents if agent.gene == other_agent.gene]) / len(self.agents)
+            percent_agents_alive = len(self.agents) / self.max_agents
+            reproduced = 1 if agent.reproduced else 0
 
-            # Food
-            vectorize = np.vectorize(lambda obj: self._get_food(obj))
-            fov_food = list(vectorize(observation).flatten())
+            # Combine all observations
+            observation = np.array(food_obs +
+                                   health_obs +
+                                   genes_obs +
+                                   [agent.health / agent.max_health] +
+                                   [reproduced] +
+                                   [percent_genes] +
+                                   [percent_agents_alive] +
+                                   [agent.killed] +
+                                   [agent.ate_super_food])
 
-            # Family
-            vectorize = np.vectorize(lambda obj: self._get_family(obj, agent))
-            family_obs = list(vectorize(observation).flatten())
-
-            # health
-            vectorize = np.vectorize(lambda obj: obj.health / 200 if obj.entity_type == self.entities.agent else -1)
-            health_obs = list(vectorize(observation).flatten())
-
-            nr_genes = sum([1 for other_agent in self.agents if agent.gene == other_agent.gene])
-
-            reproduced = 0
-            if agent.reproduced:
-                reproduced = 1
-
-            fov = np.array(fov_food + family_obs + health_obs + [agent.health / 200] + [reproduced] + [nr_genes]
-                           + [len(self.agents)] + [agent.killed] + [agent.ate_berry])
-
+            # Update their states
             if agent.age == 0:
-                agent.state = fov
-            agent.state_prime = fov
+                agent.state = observation
+            agent.state_prime = observation
+
+    def _prepare_observations(self) -> Tuple[np.array, np.array, np.array]:
+        """ Prepare three grids of specific type-observations: food, health, and gene value
+
+        Returns:
+        --------
+        food_grid : np.array
+            A grid in which normal food has the value 0.5, super food 1, poison -1, and 0 for all others
+
+        health_grid : np.array
+            A grid in which the health of all agents is displayed divided by their max health.
+
+        genes_grid : np.array
+            A grid in which the gene value of all agents is displayed
+        """
+        # Food
+        vectorize = np.vectorize(lambda obj: self._get_food(obj))
+        food_grid = vectorize(self.grid.grid)
+
+        # health
+        vectorize = np.vectorize(
+            lambda obj: obj.health / obj.max_health if obj.entity_type == self.entities.agent else -1)
+        health_grid = vectorize(self.grid.grid)
+
+        # Genes
+        vectorize = np.vectorize(lambda obj: self._get_genes(obj))
+        genes_grid = vectorize(self.grid.grid)
+
+        return food_grid, health_grid, genes_grid
+
+    def _extract_gene_observation(self, agent: Agent, genes_grid: np.array) -> np.array:
+        """ Create an observation for an agent in which all agents with shared gens are 1, all other agents
+        are -1, and everything else gets 0.
+
+        Parameters:
+        -----------
+        agent : Agent
+            The agent for which to extract the observation
+
+        genes_grid : np.array
+            An array that shows the location of each agent and their respective gene value
+
+        Returns:
+        --------
+        common_genes : np.array
+            A gene observation that indicates the location (within an agent's fov) of shared genes (val = 1),
+            agents that do not share genes (val = -1) and all others (val = 0)
+        """
+        common_genes = self.grid.fov(agent.i, agent.j, 3, genes_grid)
+        common_genes[(common_genes > -1) & (common_genes != agent.gene)] = -1
+        common_genes[common_genes == agent.gene] = 1
+        common_genes[common_genes == -2] = 0
+        common_genes = list(common_genes.flatten())
+
+        return common_genes
+
+    def _get_food(self, obj: Entity or Agent) -> float:
+        """ Lambda function to return .5 for food, 1. for super food, -1 for poison and 0 for everything else """
+        if obj.entity_type == self.entities.food:
+            return .5
+        elif obj.entity_type == self.entities.super_food:
+            return 1.
+        elif obj.entity_type == self.entities.poison:
+            return -1.
+        elif obj.entity_type == self.entities.agent:
+            if obj.health < 0:
+                return 1.
+            else:
+                return 0.
+        else:
+            return 0.
+
+    def _get_genes(self, obj: Entity or Agent) -> int:
+        """ Lambda function to return gene value for each entity, -2 otherwise """
+        if obj.entity_type == self.entities.agent:
+            if not obj.dead:
+                return -2
+            else:
+                return obj.gene
+        else:
+            return -2
 
     def _add_agent(self,
                    coordinates: Collection[int] = None,
                    brain: BasicBrain = None,
                    gene: int = None,
                    random_loc: bool = False,
-                   p: float = 1.):
+                   p: float = 1.) -> Type[Entity] or None:
         """ Add agent, if random_loc then add at a random location with probability p
 
         Parameters:
@@ -373,31 +475,46 @@ class Environment:
             return self.grid.set(coordinates[0], coordinates[1], Agent, brain=brain, gene=gene)
 
     def _reproduce(self):
-        """ Checks, for each agent, whether it will reproduce and places an offspring close to the agent """
+        """ Checks, for each agent, whether it will reproduce and places an offspring close to the agent
+
+        Agents will reproduce if the maximum number of agents has not been reached and if they can reproduce, but
+        it is only a one in twenty chance.
+
+        If they are able to reproduce depends on the following:
+            * They should be old enough (> 5)
+            * They should not be dead
+            * They should not already have reproduced if reproduction is limited to one, otherwise
+            this does not matter
+        """
         for agent in self.agents:
             if agent.can_reproduce() and len(self.agents) <= self.max_agents and random.random() > 0.95:
 
-                    # Create new brain
-                    if self.static_families:
-                        new_brain = self.brains[agent.gene]
-                    else:
-                        new_brain = agent.brain
+                # Create new brain
+                if self.static_families:
+                    new_brain = self.brains[agent.gene]
+                else:
+                    new_brain = agent.brain
 
-                    # Add offspring close to parent
-                    coordinates = self._get_empty_within_fov(agent)
-                    if coordinates:
-                        self._add_agent(coordinates=coordinates[random.randint(0, len(coordinates) - 1)],
-                                        brain=new_brain, gene=agent.gene)
-                    else:
-                        self._add_agent(random_loc=True, brain=new_brain, gene=agent.gene)
+                # Add offspring close to parent
+                coordinates = self._get_empty_within_fov(agent)
+                if coordinates:
+                    self._add_agent(coordinates=coordinates[random.randint(0, len(coordinates) - 1)],
+                                    brain=new_brain, gene=agent.gene)
+                else:
+                    self._add_agent(random_loc=True, brain=new_brain, gene=agent.gene)
 
-                    # Limit reproduction
-                    if self.limit_reproduction:
-                        agent.reproduced = True
+                # Limit reproduction
+                if self.limit_reproduction:
+                    agent.reproduced = True
 
     def _produce(self):
-        """ Randomly produce new agent if too little agents are alive """
-        if len(self.agents) <= self.max_agents + 1 and random.random() > 0.95:
+        """ Randomly produce new agent if too little agents are alive
+
+        If static families, a brain is randomly chosen from the available list of main brains.
+        Else, one of the best brains is deep copied and used as a new brain. If the model is PERD3QN,
+        then its brain is slightly scrambled (gaussian noise is applied) to imitate mutation.
+        """
+        if len(self.agents) <= self.max_agents and random.random() > 0.95:
 
             # Choose random brain from initialized brains
             if self.static_families:
@@ -410,38 +527,22 @@ class Environment:
                 new_brain = copy.deepcopy(random.choice(self.best_agents).brain)
                 agent = self._add_agent(random_loc=True, brain=new_brain, gene=self.max_gene)
                 if agent:
-                    agent.scramble_brain()
+                    agent.mutate_brain()
 
-    def _get_food(self, obj):
-        """ Return 1 for food -1 for poison and 0 for everything else, 1 is returned if agent dies """
-        if obj.entity_type == self.entities.food:
-            return .5
-        if obj.entity_type == self.entities.super_food:
-            return 1.
-        elif obj.entity_type == self.entities.poison:
-            return -1.
-        elif obj.entity_type == self.entities.agent:
-            if obj.health < 0:
-                return 1.
-            else:
-                return 0.
-        else:
-            return 0.
+    def _get_empty_within_fov(self, agent: Agent) -> List[Union[int, int]] or List[None]:
+        """ Gets global coordinates of all empty space within an agents fov
 
-    def _get_family(self, obj, agent):
-        """ Return 1 for family, -1 for non-family and 0 otherwise """
-        if obj.entity_type == self.entities.agent:
-            if obj.dead:
-                return 0
-            elif obj.gene == agent.gene:
-                return 1
-            else:
-                return -1
-        else:
-            return 0
+        Parameters:
+        -----------
+        agent : Agent
+            The agent for which to get all empty coordinates in its field of view
 
-    def _get_empty_within_fov(self, agent):
-        """ Gets global coordinates of all empty space within an agents fov """
+        Returns:
+        --------
+        coordinates : List[Union[int, int]] or List[None]
+            A list containing coordinates (Union[int, int]) for each empty space in its fov.
+            However, the result could also be an empty list if there are no empty spaces
+        """
         observation = self.grid.fov(agent.i, agent.j, 3)
         loc = np.where(observation == 0)
         coordinates = []
@@ -471,7 +572,11 @@ class Environment:
         return coordinates
 
     def _prepare_movement(self):
-        """ Store the target coordinates agents want to go to """
+        """ Store the target coordinates of the location all agents want to move in.
+
+        This preparation is needed to check whether, when executing movement, it is actually possible
+        to move in that direction as only one entity can occupy a space.
+        """
         for agent in self.agents:
 
             if agent.action <= 3 and not agent.dead:
@@ -503,7 +608,14 @@ class Environment:
                 agent.update_target_location(agent.i, agent.j)
 
     def _execute_movement(self):
-        """ Move if no agents want to go to the same spot """
+        """ Move if no agents want to go to the same spot
+
+        If two agents want to move to the same spot, that spot is registrered as an impossible coordinate.
+        No agents will be able to move in that location, and agents that want to move to that spot will
+        have to remain in the same location.
+
+        If an agent lands at a BasicFood entity, it will eat it.
+        """
 
         impossible_coordinates = True
         while impossible_coordinates:
@@ -521,37 +633,38 @@ class Environment:
                 self._update_agent_position(agent)
 
     def _attack(self):
-        """ Attack and decrease health if target is hit """
+        """ Attack and decrease health if target is hit
+
+        The agent is killed if attacked.
+        Whether an agent killed kin or not is tracked.
+        """
         for agent in self.agents:
             target = Empty((-1, -1))
 
             if not agent.dead:
 
-                # Get target
+                # Attack up
                 if agent.action == self.actions.attack_up:
                     if agent.i == 0:
                         target = self.grid.get(self.height - 1, agent.j)
                     else:
                         target = self.grid.get(agent.i - 1, agent.j)
 
+                # Attack right
                 elif agent.action == self.actions.attack_right:
                     if agent.j == (self.width - 1):
                         target = self.grid.get(agent.i, 0)
                     else:
                         target = self.grid.get(agent.i, agent.j + 1)
 
-                elif agent.action == self.actions.attack_right:
-                    if agent.j == (self.width - 1):
-                        target = self.grid.get(agent.i, 0)
-                    else:
-                        target = self.grid.get(agent.i, agent.j + 1)
-
+                # Attack down
                 elif agent.action == self.actions.attack_down:
                     if agent.i == (self.height - 1):
                         target = self.grid.get(0, agent.j)
                     else:
                         target = self.grid.get(agent.i + 1, agent.j)
 
+                # Attack left
                 elif agent.action == self.actions.attack_left:
                     if agent.j == 0:
                         target = self.grid.get(agent.i, self.width - 1)
@@ -568,8 +681,12 @@ class Environment:
                     else:
                         agent.intra_killed = 1
 
-    def _eat(self, agent):
-        """ Eat food """
+    def _eat(self, agent: Agent):
+        """ Eat food
+
+        If an agent eats normal food, its health is increased with its nutritional value (40).
+        If an agent eats poison, its health is decreased with its nutritional value (-40).
+        """
 
         if self.grid.grid[agent.i_target, agent.j_target].entity_type == self.entities.food:
             agent.health = min(200, agent.health + 40)
@@ -578,10 +695,10 @@ class Environment:
         elif self.grid.grid[agent.i_target, agent.j_target].entity_type == self.entities.super_food:
             agent.health = min(200, agent.health + 40)
             agent.max_age = int(agent.max_age * 1.2)
-            agent.ate_berry = 1.
+            agent.ate_super_food = 1.
 
     def _get_impossible_coordinates(self):
-        """ Returns coordinates of coordinates where multiple agents want to go """
+        """ Returns coordinates of locations multiple agents want to go """
         target_coordinates = [agent.target_coordinates for agent in self.agents]
 
         if target_coordinates:
@@ -641,7 +758,7 @@ class Environment:
         if len(np.where(self.grid.get_numpy() == self.entities.super_food)[0]) == 0:
             self.grid.set_random(SuperFood, p=1)
 
-    def _update_agent_position(self, agent):
+    def _update_agent_position(self, agent: Agent):
         """ Update position of an agent in the grid """
         self.grid.grid[agent.i, agent.j] = Empty((agent.i, agent.j))
         self.grid.grid[agent.i_target, agent.j_target] = agent

@@ -1,8 +1,0 @@
-{
-    "__module__": "TheGame.Models.DQN",
-    "epsilon": 0.01,
-    "max_epi": 1500,
-    "method": "DQN",
-    "train_freq": 20,
-    "training": true
-}

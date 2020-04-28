@@ -147,6 +147,7 @@ class Agent(Entity):
 
         # Agent-based stats
         self.health = 200
+        self.max_health = 200
         self.age = 0
         self.max_age = 50
         self.brain = brain
@@ -157,7 +158,7 @@ class Agent(Entity):
         self.killed = 0
         self.inter_killed = 0
         self.intra_killed = 0
-        self.ate_berry = -1
+        self.ate_super_food = -1
         self.dead = False
 
         # Reinforcement Learning Stats
@@ -206,7 +207,7 @@ class Agent(Entity):
                 self.brain.learn(age=self.age, dead=self.dead, action=self.action, state=self.state, reward=self.reward,
                                  state_prime=self.state_prime, done=self.done, **kwargs)
 
-    def scramble_brain(self):
+    def mutate_brain(self):
         """ Applies gaussian noise to all layers in a model """
         if self.brain.method == "PERD3QN":
             self.brain.apply_gaussian_noise()

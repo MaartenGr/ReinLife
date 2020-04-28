@@ -87,22 +87,27 @@ class Grid:
         self.grid[i, j] = entity_1
         self.grid[k, l] = entity_2
 
-    def fov(self, i: int, j: int, dist: int) -> np.array:
-        """ Get the fov (also through walls) for location i, j with distance dist """
+    def fov(self, i: int, j: int, dist: int, grid: np.ndarray = None) -> np.ndarray:
+        """ Get the fov (also through walls) for location i, j with distance dist
+        If grid is given, use that grid to extract the fov from i, j, and dist.
+        """
+
+        if grid is None:
+            grid = self.grid
 
         # Get sections
-        top = self.grid[:dist, :]
-        bottom = self.grid[self.height - dist:, :]
-        right = self.grid[:, self.width - dist:]
-        left = self.grid[:, :dist]
-        lower_left = self.grid[self.height - dist:, :dist]
-        lower_right = self.grid[self.height - dist:, self.width - dist:]
-        upper_left = self.grid[:dist, :dist]
-        upper_right = self.grid[:dist, self.width - dist:]
+        top = grid[:dist, :]
+        bottom = grid[self.height - dist:, :]
+        right = grid[:, self.width - dist:]
+        left = grid[:, :dist]
+        lower_left = grid[self.height - dist:, :dist]
+        lower_right = grid[self.height - dist:, self.width - dist:]
+        upper_left = grid[:dist, :dist]
+        upper_right = grid[:dist, self.width - dist:]
 
         # Create top, middle and bottom sections
         full_top = np.concatenate((lower_right, bottom, lower_left), axis=1)
-        full_middle = np.concatenate((right, self.grid, left), axis=1)
+        full_middle = np.concatenate((right, grid, left), axis=1)
         full_bottom = np.concatenate((upper_right, top, upper_left), axis=1)
 
         # Apply fov based on dist
