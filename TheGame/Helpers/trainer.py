@@ -1,10 +1,24 @@
-from TheGame.World.environment import Environment
+from typing import List
 from tqdm import tqdm
+from TheGame.World.environment import Environment
+from TheGame.Models.utils import BasicBrain
 
 
-def trainer(brains, n_episodes=10_000, width=30, height=30, visualize_results=False, google_colab=False,
-            update_interval=500, print_results=True, max_agents=100, render=False, static_families=True, training=True, save=True,
-            limit_reproduction=False, incentivize_killing=True):
+def trainer(brains: List[BasicBrain],
+            n_episodes: int = 10_000,
+            width: int = 30,
+            height: int = 30,
+            visualize_results: bool = False,
+            google_colab: bool = False,
+            update_interval: int = 500,
+            print_results: bool = True,
+            max_agents: int = 100,
+            render: bool = False,
+            static_families: bool = True,
+            training: bool = True,
+            save: bool = True,
+            limit_reproduction: bool = False,
+            incentivize_killing: bool = True) -> Environment:
     """ Automatically trains the models for n_episodes
 
     Parameters:

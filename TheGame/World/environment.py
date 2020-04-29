@@ -238,7 +238,10 @@ class Environment:
         directory of its model class, for example PPO, PERD3QN, and DQN. Then, each model is saved as
         "brain_x.pt" where x is simply the sequence in which it is saved.
         """
-        fig = self.tracker.fig if not self.google_colab else None
+        if self.google_colab:
+            self.tracker.create_matplotlib(columns=3, brains=self.brains)
+        fig = self.tracker.fig
+
         saver = Saver('Experiments', google_colab=self.google_colab)
         settings = {"Update interval": self.tracker.update_interval,
                     "Width": self.width,

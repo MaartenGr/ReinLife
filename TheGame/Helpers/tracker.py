@@ -281,6 +281,10 @@ class Tracker:
         del a_list[:]
         return aggregation
 
+    def create_matplotlib(self, columns: int, brains: List[BasicBrain]):
+        self._init_matplotlib(columns, brains)
+        self._plot_matplotlib()
+
     def _init_matplotlib(self, columns: int, brains: List[BasicBrain]):
         """ Initialize the matplotlib figure to draw on """
         plt.ion()
