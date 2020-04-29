@@ -9,7 +9,7 @@ from .grid import Grid
 from .utils import Actions, EntityTypes
 from TheGame.Helpers.Tracker import Tracker
 from TheGame.Helpers.Saver import Saver
-from TheGame.Helpers.Render import Visualize
+from TheGame.Helpers.render import Visualize
 from TheGame.Models.utils import BasicBrain
 
 
@@ -115,12 +115,11 @@ class Environment:
         self.observation_space = 153
 
         # Render
-        self.viz = Visualize(self.width, self.height, grid_size, pastel_colors, self.static_families)
+        self.viz = Visualize(self.width, self.height, grid_size, pastel_colors)
 
         # Results tracker
-        self.tracker = Tracker(print_interval, interactive_results,
-                               google_colab, len(self.brains), self.static_families,
-                               brains)
+        self.tracker = Tracker(print_interval, interactive_results, google_colab, len(self.brains),
+                               self.static_families, brains)
 
     def reset(self):
         """ Resets the environment
