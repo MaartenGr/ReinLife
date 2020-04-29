@@ -33,8 +33,11 @@ class Environment:
     max_agents : int, default 50
         The maximum number of agents that can be alive in the environment at the same time
 
-    print_interval : int, default 500
-        The number of episodes at which interval to track results and update graphs
+    update_interval : int, default 500
+        The number of episodes at which to average the results
+
+    print_results : bool, default True
+        Whether to print the results
 
     static_families : bool, default True
         If True, a fixed number of families sharing the same gene can appear in the environment.
@@ -45,7 +48,7 @@ class Environment:
         Whether to show interactive matplotlib results of the simulation.
 
         NOTE: Due to the generation of matplotlib plots, this can significantly slow
-        down the simulation. Set the print_interval high enough (i.e., 500 oir higher)
+        down the simulation. Set the update_interval high enough (i.e., 500 oir higher)
         to prevent this from happening.
 
     google_colab : bool, default False
@@ -74,7 +77,8 @@ class Environment:
                  brains: List[BasicBrain] = None,
                  grid_size: int = 16,
                  max_agents: int = 50,
-                 print_interval: int = 500,
+                 update_interval: int = 500,
+                 print_results: bool = True,
                  static_families: bool = True,
                  interactive_results: bool = False,
                  google_colab: bool = False,
@@ -118,8 +122,13 @@ class Environment:
         self.viz = Visualize(self.width, self.height, grid_size, pastel_colors)
 
         # Results tracker
-        self.tracker = Tracker(print_interval, interactive_results, google_colab, len(self.brains),
-                               self.static_families, brains)
+        self.tracker = Tracker(update_interval=update_interval,
+                               interactive=interactive_results,
+                               print_results=print_results,
+                               google_colab=google_colab,
+                               nr_genes=len(self.brains),
+                               static_families=self.static_families,
+                               brains=brains)
 
     def reset(self):
         """ Resets the environment
@@ -231,7 +240,7 @@ class Environment:
         """
         fig = self.tracker.fig if not self.google_colab else None
         saver = Saver('Experiments', google_colab=self.google_colab)
-        settings = {"Print interval": self.tracker.print_interval,
+        settings = {"Update interval": self.tracker.update_interval,
                     "Width": self.width,
                     "Height": self.height,
                     "Max agents": self.max_agents,

@@ -21,11 +21,14 @@ class Tracker:
 
     Parameters:
     -----------
-    print_interval : int
+    update_interval : int
         The interval at which to average the results and update the visualization
 
     interactive : bool, default False
         Whether to show an interactive matplotlib visualization
+
+    print_results : bool, default True
+        Whether to print the results in the console
 
     google_colab : bool, default False
         Whether google colaboratory is used to execute the experiment
@@ -41,8 +44,9 @@ class Tracker:
         All brains that are currently in the environment
     """
     def __init__(self,
-                 print_interval: int,
+                 update_interval: int,
                  interactive: bool = False,
+                 print_results: bool = True,
                  google_colab: bool = False,
                  nr_genes: int = None,
                  static_families: bool = True,
@@ -61,7 +65,7 @@ class Tracker:
             "Avg Number of Populations": []
         }
 
-        # Averages results from the tracker above each print_interval
+        # Averages results from the tracker above each update_interval
         self.results = {
             "Avg Population Size": {gene: [] for gene in range(nr_genes)},
             "Avg Population Age": {gene: [] for gene in range(nr_genes)},
@@ -74,12 +78,13 @@ class Tracker:
         }
 
         self.variables = list(self.results.keys())
-        self.print_interval = print_interval
+        self.update_interval = update_interval
         self.interactive = interactive
         self.google_colab = google_colab
         self.families = static_families
         self.colors = ["#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7", "#000000"]
         self.first_run = True
+        self.print_results = print_results
 
         if not self.families:
             self.nr_genes = 1
@@ -112,8 +117,12 @@ class Tracker:
         """
         self._track_results(agents)
 
-        if n_epi % self.print_interval == 0 and n_epi != 0:
+        if n_epi % self.update_interval == 0 and n_epi != 0:
             self._average_results()
+
+            if self.print_results:
+                print("yes")
+                self._print_results()
 
             if self.interactive:
 
@@ -122,8 +131,40 @@ class Tracker:
                 else:
                     self._plot_matplotlib()
 
+    def _print_results(self):
+        """ Print the results in the command line """
+        header_string = "+"
+        header_title = "|"
+        width = {variable: 0 for variable in ["Gene"] + self.variables}
+        for variable in ["Gene"] + self.variables[:-1]:
+            variable_string = variable.replace(" Population", "").replace("Number", "Nr").replace("of ", "")
+            header_string += "-" * (len(variable_string) + 2) + "+"
+            header_title += " " + variable_string + " |"
+            width[variable] = len(variable_string) + 2
+
+        gene_strings = {gene: "" for gene in range(self.nr_genes)}
+        for gene in range(self.nr_genes):
+            left, right = self.get_left_right_whitespace(width["Gene"], gene)
+            gene_string = "|" + left + str(gene) + right + "|"
+
+            for variable in self.variables[:-1]:
+                val = round(self.results[variable][gene][-1], 2)
+                left, right = self.get_left_right_whitespace(width[variable], val)
+
+                gene_string += left + str(val) + right + "|"
+            gene_strings[gene] = gene_string
+
+        print()
+        print(header_string)
+        print(header_title)
+        print(header_string)
+        for gene in range(self.nr_genes):
+            print(gene_strings[gene])
+            print(header_string)
+        print("\n\n")
+
     def _average_results(self):
-        """ Average all results every print_interval """
+        """ Average all results every update_interval """
         for variable in self.results.keys():
             if variable == "Avg Number of Populations":
                 aggregation = self._aggregate(self.track_results["Avg Number of Populations"])
@@ -236,7 +277,7 @@ class Tracker:
             return [False for _ in range(col)]
 
     def _aggregate(self, a_list: List) -> np.array:
-        aggregation = np.mean([val for val in a_list[-self.print_interval:] if val > -1])
+        aggregation = np.mean([val for val in a_list[-self.update_interval:] if val > -1])
         del a_list[:]
         return aggregation
 
@@ -290,9 +331,9 @@ class Tracker:
         NOTE: If you use pycharm, make sure to uncheck "show plots in tool window" in
         settings -> tools.
         """
-        x = np.arange(self.print_interval,
-                      (len(self.results["Avg Number of Populations"]) * self.print_interval) + 1,
-                      self.print_interval)
+        x = np.arange(self.update_interval,
+                      (len(self.results["Avg Number of Populations"]) * self.update_interval) + 1,
+                      self.update_interval)
 
         for i, _ in enumerate(self.variables_to_plot):
             for k, variable in enumerate(self.variables_to_plot[i]):
@@ -322,8 +363,8 @@ class Tracker:
 
     def _plot_google(self):
         """ Plots intermediate results in google colab """
-        x = np.arange(self.print_interval, (len(self.results["Avg Number of Populations"]) * self.print_interval) + 1,
-                      self.print_interval)
+        x = np.arange(self.update_interval, (len(self.results["Avg Number of Populations"]) * self.update_interval) + 1,
+                      self.update_interval)
 
         for i, _ in enumerate(self.variables_to_plot):
             for k, variable in enumerate(self.variables_to_plot[i]):
@@ -347,6 +388,18 @@ class Tracker:
                             plt.figure(figsize=(3, 3))
                             plt.title(variable)
                             plt.plot(x, self.results[variable])
+
+    @staticmethod
+    def get_left_right_whitespace(length, gene):
+        """ Get the empty space left and right from a title with length=length"""
+        gene_length = len(str(gene))
+        if (length - gene_length) % 2 == 0:
+            left = int((length - gene_length) / 2)
+            right = int((length - gene_length) / 2)
+        else:
+            left = int(((length - gene_length) / 2) - 0.5)
+            right = int(((length - gene_length) / 2) + 0.5)
+        return left * " ", right * " "
 
 
 def mypause(interval: float):

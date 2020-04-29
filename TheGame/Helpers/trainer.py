@@ -3,7 +3,7 @@ from tqdm import tqdm
 
 
 def trainer(brains, n_episodes=10_000, width=30, height=30, visualize_results=False, google_colab=False,
-            print_interval=500, max_agents=100, render=False, static_families=True, training=True, save=True,
+            update_interval=500, print_results=True, max_agents=100, render=False, static_families=True, training=True, save=True,
             limit_reproduction=False, incentivize_killing=True):
     """ Automatically trains the models for n_episodes
 
@@ -28,8 +28,11 @@ def trainer(brains, n_episodes=10_000, width=30, height=30, visualize_results=Fa
         If you want to visualize your results interactively in google_colab, also set this parameter
         to True as well as the one above.
 
-    print_interval : int, default 500
-        The interval at which to print and/or visualize results.
+    update_interval : int, default 500
+        The interval at which average the results
+
+    print_results : bool, default True
+        Whether to print the results to the console
 
     max_agents : int, default 100
         The maximum number of agents can occupy the environment.
@@ -60,9 +63,9 @@ def trainer(brains, n_episodes=10_000, width=30, height=30, visualize_results=Fa
     """
 
     env = Environment(width=width, height=height, max_agents=max_agents, brains=brains, grid_size=24,
-                      static_families=static_families, print_interval=print_interval, interactive_results=visualize_results,
-                      google_colab=google_colab, training=training, limit_reproduction=limit_reproduction,
-                      incentivize_killing=incentivize_killing)
+                      static_families=static_families, update_interval=update_interval, print_results=print_results,
+                      interactive_results=visualize_results, google_colab=google_colab, training=training,
+                      limit_reproduction=limit_reproduction, incentivize_killing=incentivize_killing)
     env.reset()
 
     for n_epi in tqdm(range(n_episodes+1)):
