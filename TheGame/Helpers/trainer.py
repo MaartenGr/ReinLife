@@ -48,6 +48,9 @@ def trainer(brains, n_episodes=10_000, width=30, height=30, visualize_results=Fa
     limit_reproduction : bool, default False
         If False, agents can reproduce indefinitely. If True, all agents can only reproduce once.
 
+    incentivize_killing : bool, default True
+        Whether to incentivize killing by adding 0.2 everytime an agent kills another
+
     Returns:
     --------
     env : gym.env

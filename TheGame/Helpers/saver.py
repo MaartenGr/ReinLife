@@ -1,8 +1,12 @@
 import os
 import json
+import inspect
 from datetime import date
 import numpy as np
-import inspect
+from typing import List, Tuple
+import matplotlib.pyplot as plt
+
+from TheGame.World.entities import Agent
 
 
 class Saver:
@@ -35,18 +39,42 @@ class Saver:
     directory of its model class, for example PPO, PERD3QN, and DQN. Then, each model is saved as
     "brain_x.pt" where x is simply the sequence in which it is saved.
 
+    Parameters:
+    -----------
+    main_folder : str
+        The folder you would want to store the experiment.
+        NOTE: This is just the name of the top folder. The exact location of the main_folder is determined
+        by your curren working directory.
+
+    google_colab : bool, default False
+        Whether you use google colaboratory to run the experiment
     """
-    def __init__(self, main_folder, google_colab=False):
+    def __init__(self, main_folder: str, google_colab: bool = False):
         cwd = os.getcwd()
         self.google_colab = google_colab
-        if self.google_colab:
-            self.separator = "/"
-        else:
-            self.separator = "\\"
+        self.separator = "/" if self.google_colab else "\\"
         self.main_folder = cwd + self.separator + main_folder
 
-    def save(self, agents, family, results, settings, fig):
-        """ Save brains and create directories if neccesary """
+    def save(self, agents: List[Agent], family: bool, results: dict, settings: dict, fig: plt.Figure):
+        """ Save brains and create directories if neccesary
+
+        Parameters:
+        -----------
+        agents : List[Agent]
+            A list of all agents for which paths need to be created
+
+        family : bool
+            Whether there are static families
+
+        results : dict
+            The results of the experiment
+
+        settings : dict
+            The settings of the experiment
+
+        fig : plt.Figure
+            The matplotlib figure to save
+        """
         directory_paths, agent_paths, experiment_path = self._get_paths(agents, family)
         self._create_directories(directory_paths)
 
@@ -68,24 +96,28 @@ class Saver:
         print("Save Successful!")
         print("################")
 
-    def _save_params(self, agents, agent_paths):
-        parameters = {agent: {} for agent in agents}
+    def _get_paths(self, agents: List[Agent], family: bool) -> Tuple[List[str], dict, str]:
+        """ Get all paths for creating directories and paths for agents' brains
 
-        # Extract parameters
-        for agent in agents:
-            params = inspect.getmembers(agent.brain, lambda a: not (inspect.isroutine(a)))
-            for name, val in params:
-                if type(val) in [float, int, bool, str]:
-                    parameters[agent][name] = val
+        Parameters:
+        -----------
+        agents : List[Agent]
+            A list of all agents for which paths need to be created
 
-        # Save parameters
-        for agent in agents:
-            path = agent_paths[agent].replace("brain", "parameters") + ".json"
-            with open(path, "w") as f:
-                json.dump(parameters[agent], f, indent=4)
+        family : bool
+            Whether there are static families
 
-    def _get_paths(self, agents, family):
-        """ Get all paths for creating directories and paths for agents' brains """
+        Returns:
+        --------
+        all_paths : List[str]
+            All paths that need to be created
+
+        agents_paths : dict
+            For each agent, the path that needs to be created
+
+        experiment_path : str
+            The main experiment folder
+        """
         # Get experiment folder path and increment if one already exists executed on the same day
         today = str(date.today())
         experiment_path = self.main_folder + self.separator + today + "_V1"
@@ -97,15 +129,17 @@ class Saver:
         # Get path for each model in the experiment directory
         model_paths = list(set([experiment_path + self.separator + agent.brain.method for agent in agents]))
 
+        # Extract paths for each agent based on their gene value
         if family:
             agents_paths = {agent: experiment_path + self.separator + agent.brain.method +
-                                   self.separator + "brain_gene_" + str(agent.gene)
+                            self.separator + "brain_gene_" + str(agent.gene)
                             for agent in agents}
 
         # If agents have the same model (i.e., "duplicates"), then increment their directory number
         else:
-            agents_paths = {agent: experiment_path + self.separator + agent.brain.method +
-                                   self.separator + "brain_1" for agent in agents}
+            agents_paths = {agent: experiment_path + self.separator + agent.brain.method + self.separator + "brain_1"
+                            for agent in agents}
+
             vals, count = np.unique([val for val in agents_paths.values()], return_counts=True)
             duplicates = {x[0]: y[0] for x, y in zip(vals[np.argwhere(count > 1)], count[np.argwhere(count > 1)])}
             for duplicate in duplicates.keys():
@@ -115,7 +149,7 @@ class Saver:
         all_paths = [self.main_folder] + [experiment_path] + model_paths
         return all_paths, agents_paths, experiment_path
 
-    def _create_directories(self, all_paths):
+    def _create_directories(self, all_paths: List[str]):
         """ Create directories if neccesary and print which were created """
         created_paths = []
 
@@ -133,8 +167,35 @@ class Saver:
             print()
 
     @staticmethod
-    def _create_directory(path):
-        """ Tries to create a directory """
+    def _save_params(agents: List[Agent], agent_paths: dict):
+        """ Extract and save the parameters for each brain
+
+        Parameters:
+        -----------
+        agents : List[Agent]
+            A list of all agents for which paths need to be created
+
+        agents_paths : dict
+            For each agent, the path that needs to be created
+        """
+        parameters = {agent: {} for agent in agents}
+
+        # Extract parameters
+        for agent in agents:
+            params = inspect.getmembers(agent.brain, lambda a: not (inspect.isroutine(a)))
+            for name, val in params:
+                if type(val) in [float, int, bool, str]:
+                    parameters[agent][name] = val
+
+        # Save parameters
+        for agent in agents:
+            path = agent_paths[agent].replace("brain", "parameters") + ".json"
+            with open(path, "w") as f:
+                json.dump(parameters[agent], f, indent=4)
+
+    @staticmethod
+    def _create_directory(path: str) -> bool:
+        """ Attempts to create a directory """
         try:
             os.mkdir(path)
         except OSError:
@@ -143,11 +204,11 @@ class Saver:
             return True
 
     @staticmethod
-    def get_key(val, dictionary):
-        """ Gets the key of a value in a dictiory """
+    def get_key(val: str, dictionary: dict) -> str:
+        """ Gets the key of a value in a dictionary """
         return next(key for key, value in dictionary.items() if value == val)
 
     @staticmethod
-    def get_int(a_string):
+    def get_int(a_string: str) -> int:
         """ Get all integers in a string """
         return int("".join([s for s in a_string if s.isdigit()]))

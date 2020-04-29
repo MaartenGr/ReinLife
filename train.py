@@ -1,7 +1,7 @@
 from TheGame.Models import A2C, D3QN, DQN, DRQN, PERD3QN, PERDQN, PPO
 from TheGame.Helpers import trainer
 
-n_episodes = 20_000
+n_episodes = 15_000
 # brains = [PERD3QN(153, 8),
 #           D3QN(153, 8),
 #           DQN(153, max_epi=n_episodes, learning_rate=0.0005),
@@ -15,7 +15,6 @@ brains = [
           PERD3QN(153, 8, train_freq=5)
           ]
 
-brains = [PERD3QN(153, 8, train_freq=10), PERD3QN(153, 8, train_freq=10)]
 
 trainer(brains, n_episodes=n_episodes, print_interval=300, width=30, height=30, max_agents=100,
         visualize_results=True, google_colab=False, render=True, static_families=True, training=True, save=True,

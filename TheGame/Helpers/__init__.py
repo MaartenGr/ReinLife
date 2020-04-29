@@ -1,1 +1,1 @@
-from TheGame.Helpers.Trainer import trainer
+from TheGame.Helpers.trainer import trainer

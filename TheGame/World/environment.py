@@ -7,8 +7,8 @@ import numpy as np
 from .entities import Agent, Empty, Food, Poison, SuperFood, Entity
 from .grid import Grid
 from .utils import Actions, EntityTypes
-from TheGame.Helpers.Tracker import Tracker
-from TheGame.Helpers.Saver import Saver
+from TheGame.Helpers.tracker import Tracker
+from TheGame.Helpers.saver import Saver
 from TheGame.Helpers.render import Visualize
 from TheGame.Models.utils import BasicBrain
 
