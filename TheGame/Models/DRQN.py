@@ -86,12 +86,12 @@ class DRQNAgent(BasicBrain):
         self.buffer.store(obs, action, reward, next_obs, done)
 
     def learn(self, age, dead, action, state, reward, state_prime, done, n_epi):
-        self.memorize(state, action, reward / 200.0, state_prime, done)
-        if age % self.train_freq == 0 or dead:
-            self.train()
-
         if n_epi % self.soft_update_freq == 0:
             self.target_net.load_state_dict(self.eval_net.state_dict())
+
+        self.memorize(state, action, reward / 200.0, state_prime, done)
+        if (age % self.train_freq == 0 and age > 0) or dead:
+            self.train()
 
     def train(self):
         observation, action, reward, next_observation, done = self.buffer.sample()
