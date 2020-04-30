@@ -1,17 +1,17 @@
 ![](images/logo.png)
 
-> Code and instructions for creating Artificial Life with Reinforcement Learning
-
-The purpose of this repo is to create Artificial Life in a non-traditional 
+> Code and instructions for creating Artificial Life in a non-traditional 
 way, namely with Reinforcement Learning instead of Evolutionary Algorithms. 
 
 Although Evolutionary Algorithms have shown to result in interesting behavior,
 they focus on learning across generations whereas behavior could also be learned
-during ones lifetime. This is where Reinforcement Learning comes in which learns
-through, in its essence a simple, reward/punishment system.  
+during ones lifetime. This is where Reinforcement Learning comes in, which 
+learns through a reward/punishment system that allows it to learn new behavior
+during its live time. Using Reinforcement Learning, entities learn to survive, 
+reproduce, and make sure to maximize the fitness of their kin. 
 
-Using Reinforcement Learning, entities learn to survive, reproduce, and make
-sure to maximize the fitness of their kin. 
+![](images/animation.gif)
+
 
 ## Table of Contents  
 <!--ts-->
@@ -42,23 +42,16 @@ The environment is build upon a numpy matrix of size `n` * `m` where
 each grid has a pixel size of 24 by 24. Each location within the matrix 
 represents a location which can be occupied by only a single entity.  
 
-![](images/animation.gif)
-
 In the animation above you can find the following objects:
   
-![test](images/agent.png)   
-Agents can move, attack other entities, eat, and reproduce asexually.  
+![test](images/agent.png)![test](images/food.png)![test](images/poison.png)![test](images/superfood.png)   
+
+* **Agents** can move, attack other entities, eat, and reproduce asexually.  
 Their color indicates kinship between others with the same color. 
 They have a health of 200 which decreases 10 with each action they take.  
-
-![test](images/food.png)   
-White blocks are food which increases an entity's health by 40.
- 
-![test](images/poison.png)   
-Black blocks are poison which decreases an entity's health by 40.
-
-![test](images/superfood.png)   
-Red blocks are especially helpful as they have the same properties as food but 
+* **White** blocks are food which increases an entity's health by 40.
+* **Black** blocks are poison which decreases an entity's health by 40.
+* **Red** blocks are especially helpful as they have the same properties as food but 
 also multiplies an entity's maximum age by 1.2.  
 
 <a name="agents"/></a>

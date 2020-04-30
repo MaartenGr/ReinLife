@@ -98,7 +98,7 @@ class PERDQNAgent(BasicBrain):
         """ After some time interval update the target model to be same with model """
         self.target_model.load_state_dict(self.model.state_dict())
 
-    def get_action(self, state, n_epi):
+    def get_action(self, state):
         """ Get action from model using epsilon-greedy policy """
         state = np.reshape(state, [1, self.state_size])
         if np.random.rand() <= self.epsilon:

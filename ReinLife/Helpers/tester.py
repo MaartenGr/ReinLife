@@ -1,6 +1,7 @@
 from typing import List
 from ReinLife.World.environment import Environment
 from ReinLife.Models.utils import BasicBrain
+import pygame
 
 
 def tester(brains: List[BasicBrain],
@@ -52,22 +53,37 @@ def tester(brains: List[BasicBrain],
                       pastel_colors=pastel_colors, brains=brains, training=False, static_families=static_families,
                       limit_reproduction=limit_reproduction)
     env.reset()
+    env.render(fps=fps)
 
+    start = False
     while True:
 
-        for agent in env.agents:
-            if env.static_families:
-                if env.brains[agent.gene].method in ["DQN", "D3QN", "PERD3QN"]:
-                    agent.action = agent.brain.get_action(agent.state, 0)
-                elif env.brains[agent.gene].method in ["PPO", "PERDQN"]:
-                    agent.action = agent.brain.get_action(agent.state)
-            else:
-                if agent.brain.method in ["DQN", "D3QN", "PERD3QN"]:
-                    agent.action = agent.brain.get_action(agent.state, 0)
-                elif agent.brain.method in ["PPO", "PERDQN"]:
-                    agent.action = agent.brain.get_action(agent.state)
+        if start:
+            for agent in env.agents:
+                if env.static_families:
+                    if env.brains[agent.gene].method in ["DQN", "D3QN", "PERD3QN"]:
+                        agent.action = agent.brain.get_action(agent.state, 0)
+                    elif env.brains[agent.gene].method in ["PPO", "PERDQN"]:
+                        agent.action = agent.brain.get_action(agent.state)
+                else:
+                    if agent.brain.method in ["DQN", "D3QN", "PERD3QN"]:
+                        agent.action = agent.brain.get_action(agent.state, 0)
+                    elif agent.brain.method in ["PPO", "PERDQN"]:
+                        agent.action = agent.brain.get_action(agent.state)
 
-        env.step()
-        env.update_env()
-        env.render(fps=fps)
+            env.step()
+            env.update_env()
+            env.render(fps=fps)
+
+        events = pygame.event.get()
+        for event in events:
+            print(event)
+            if event.type == pygame.KEYDOWN:
+                print("yes")
+                print(event.key)
+                if event.key == pygame.K_SPACE:
+                    if start:
+                        start = False
+                    else:
+                        start = True
 
