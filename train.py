@@ -10,5 +10,5 @@ trainer(brains, n_episodes=n_episodes, update_interval=300, width=30, height=30,
         training=True, save=True, limit_reproduction=False, incentivize_killing=True)
 
 # To do:
-#       * TO DO: Choose genes that are not alive to give them a fighting chance
-
+#       * Choose genes that are not alive to give them a fighting chance
+#       * Update tester.py such that it does not include the button press anymore

@@ -10,7 +10,7 @@ learns through a reward/punishment system that allows it to learn new behavior
 during its live time. Using Reinforcement Learning, entities learn to survive, 
 reproduce, and make sure to maximize the fitness of their kin. 
 
-![](images/animation.gif)
+![](images/animation_medium.gif)
 
 
 ## Table of Contents  
@@ -30,37 +30,37 @@ reproduce, and make sure to maximize the fitness of their kin.
 
 <a name="Overview"/></a>
 ## 1. Overview
-Here, I will give a basic overview of the environment and how the simulation
-works. Any in-depth descriptions will be shown in the sections below.  
+In the simulation above you can find entities moving independently, 
+attacking other entities, and reproducing if they are old enough. 
+It is up to the entities to find a way to survive as long as possible while 
+also making sure their kin is in good shape as possible. 
 
-In the simulation you can find entities moving independently, attacking other
-entities, and reproducing if they are old enough. It is up to the entities to 
-find a way to survive as long as possible while also making 
-sure their kin is in good shape as possible. 
+In the animation above you can find the following objects:
+  
+![](images/agent_transparent.png)  
+**Agents** can move, attack other entities, eat, and reproduce asexually. Their 
+color indicates kinship between others with the same color. 
+They have a health of 200 which decreases 10 with each action they take.
+
+![](images/food.png)  
+**White** blocks are food which increases an entity's health by 40.
+
+![](images/poison.png)  
+**Black** blocks are poison which decreases an entity's health by 40.
+
+![test](images/superfood.png)  
+**Red** blocks are especially helpful as they have the same properties as food but 
+also multiplies an entity's maximum age by 1.2.  
 
 The environment is build upon a numpy matrix of size `n` * `m` where
 each grid has a pixel size of 24 by 24. Each location within the matrix 
 represents a location which can be occupied by only a single entity.  
 
-In the animation above you can find the following objects:
-  
-![test](images/agent.png)![test](images/food.png)![test](images/poison.png)![test](images/superfood.png)   
-
-* **Agents** can move, attack other entities, eat, and reproduce asexually.  
-Their color indicates kinship between others with the same color. 
-They have a health of 200 which decreases 10 with each action they take.  
-* **White** blocks are food which increases an entity's health by 40.
-* **Black** blocks are poison which decreases an entity's health by 40.
-* **Red** blocks are especially helpful as they have the same properties as food but 
-also multiplies an entity's maximum age by 1.2.  
-
 <a name="agents"/></a>
-##  2. Agents
+##  2. Agents ![](images/agents_transparent.png)
 
 Agents are entities or organisms in the simulation that can move, attack, 
 reproduce, and act independently. 
-
-![](images/agents.png)
 
 Each agent has the following characteristics:
 * `Health`
@@ -75,11 +75,11 @@ Each agent has the following characteristics:
     * Any new agent that is created not through reproduction gets a new value
     * This `gene` is represented by the color of the body    
     
-An agent can perform one of the following **eight** actions:
+An agent can perform one of the following **eight actions**:
 * Move one space left, right, up, or down
 * Attack in the left, right, up, or down direction 
 
-The order of action execution is as follows:
+The **order** of action execution is as follows:
 * Attack
 * Move
 * Eat
@@ -95,13 +95,7 @@ down, left or right. Entities cannot move diagonally.
 
 The environment has no walls, which means that if an entity moves left from the 
 most left position in the numpy matrix, then it will move to the most right 
-position. 
-
-![test](images/numpy_array.png) 
-
-For example, if an entity is at position 4 (see image above) and it moves left, 
-then it will end up in position 6. In other words, the environment is a 
-fully-connected world.  
+position. In other words, the environment is a fully-connected world.  
 
 **Complex Movement**  
 Although the movement in itself is not complex, it becomes more difficult as 
@@ -113,7 +107,7 @@ if an entity cannot move.
 ---
 
 <a name="agents-attacking"/></a>
-#### Attacking
+#### Attacking ![](images/agent_attacking.png)
 
 An agent can attack in one of four directions:
 * Up
