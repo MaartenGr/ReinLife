@@ -1,15 +1,21 @@
 ![](images/logo.png)
 
+> Code and instructions for creating Artificial Life with Reinforcement Learning
 
-# The Game
+The purpose of this repo is to create Artificial Life in a non-traditional 
+way, namely with Reinforcement Learning instead of Evolutionary Algorithms. 
 
-The purpose of this repository is to explore different methods for creating Artificial Life.
-Although this is typically done using some version of the genetic algorithm NEAT (e.g., 
-RT-NEAT), I decided to look deeper into **Reinforcement Learning** due to its potential to learn
-complex behavior. 
+Although Evolutionary Algorithms have shown to result in interesting behavior,
+they focus on learning across generations whereas behavior could also be learned
+during ones lifetime. This is where Reinforcement Learning comes in which learns
+through, in its essence a simple, reward/punishment system.  
+
+Using Reinforcement Learning, entities learn to survive, reproduce, and make
+sure to maximize the fitness of their kin. 
 
 ## Table of Contents  
 <!--ts-->
+   1. [Overview](#overview)
    1. [Environment](#env)
         1. [Entities](#env-entities)
         2. [Movement](#env-movement)
@@ -18,19 +24,43 @@ complex behavior.
         2. [Brain](#agents-brain)
    3. [Reward](#reward)
    4. [Algorithms](#algorithms)
+   4. [Evolution](#evolution)
+   4. [Results](#results)
+   4. [Code](#code)
    100. [To Do](#todo)
 <!--te-->
 
-<a name="env"/></a>
-## 1. Environment
+<a name="Overview"/></a>
+## 1. Overview
 
-The basic environment is a numpy matrix of size *n* * *m* where each grid has a pixel size of *24* * *24*.
-Due to the nature of numpy matrices, the coordinate system is different than your traditional coordinate system 
-(see image below).  
+In the simulation you can find entities moving independently, food
+which gives some positive nutritional value, and poison which gives some negative
+nutritional value. It is up to the entities to find a way they survive as 
+long as possible while also making sure their kin is in good shape as possible. 
+
+![](images/environment.png)
+
+In the image above you can find the following objects:  
+  
+![test](images/food.png) White blocks are food which increases an entities health
+ 
+![test](images/poison.png) Black blocks are poison which decreases an entities health
+
+![test](images/agents.png) These are agents which can independently move and attack
+
+
+<a name="env"/></a>
+## 2. Environment
+
+
+The basic environment is build upon a numpy matrix of size `n` * `m` where
+each grid has a pixel size of 24 by 24. The coordinate system of the environment
+follows the conventional numpy manipulations: 
  
 ![](images/numpy_array.png?raw=true)
 
-Each location within the matrix represents a location which can occupy only a single entity. 
+Each location within the matrix represents a location which can be occupied
+by only a single entity. 
 
 <a name="env-entities"/></a>
 #### Entities

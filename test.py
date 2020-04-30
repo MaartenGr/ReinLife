@@ -7,9 +7,9 @@ from ReinLife.Models import DQN, D3QN, PERD3QN, DRQN, PPO, PERDQN
 
 # main_brains = [PERD3QN(153, 8, load_model="Experiments/Best Brain/PERD3QN/brain_gene_1.pt", training=False)
 #                for _ in range(8)]
-main_brains = [PPO(153, 8, load_model="C:/Users/Maarten/Downloads/brain_gene_0 (1).pt")
-               for _ in range(2)]
+main_brains = [PERD3QN(153, 8, load_model="C:/Users/Maarten/Documents/Projects/ReinLife/Experiments/Pretrained Brains/PERD3QN/No Static Families/PERD3QN/brain_4.pt")
+               for _ in range(8)]
 
 
-tester(main_brains, width=30, height=30, max_agents=150, pastel_colors=False, static_families=True,
+tester(main_brains, width=40, height=20, max_agents=150, pastel_colors=False, static_families=True,
        limit_reproduction=False, fps=10)
