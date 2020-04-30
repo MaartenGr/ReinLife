@@ -1,5 +1,5 @@
-from TheGame.Models import D3QN, DQN, PERD3QN, PERDQN, PPO
-from TheGame.Helpers import trainer
+from ReinLife.Models import D3QN, DQN, PERD3QN, PERDQN, PPO
+from ReinLife.Helpers import trainer
 
 n_episodes = 15_000
 

@@ -1,6 +1,6 @@
 from typing import Collection
 from .utils import EntityTypes
-from TheGame.Models.utils import BasicBrain
+from ReinLife.Models.utils import BasicBrain
 
 entities = EntityTypes
 

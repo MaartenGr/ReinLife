@@ -2,8 +2,8 @@ import random
 import numpy as np
 import pygame as pg
 from typing import List
-from TheGame.World.utils import EntityTypes
-from TheGame.World.entities import Entity, Agent
+from ReinLife.World.utils import EntityTypes
+from ReinLife.World.entities import Entity, Agent
 
 
 class Visualize:

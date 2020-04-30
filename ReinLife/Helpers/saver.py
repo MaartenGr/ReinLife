@@ -6,7 +6,7 @@ import numpy as np
 from typing import List, Tuple
 import matplotlib.pyplot as plt
 
-from TheGame.World.entities import Agent
+from ReinLife.World.entities import Agent
 
 
 class Saver:

@@ -1,5 +1,5 @@
-from TheGame import tester
-from TheGame.Models import DQN, D3QN, PERD3QN, DRQN, PPO, PERDQN
+from ReinLife import tester
+from ReinLife.Models import DQN, D3QN, PERD3QN, DRQN, PPO, PERDQN
 
 # main_brains = [PERDQN(152, 8, load_model="Brains/PERDQN/model_40000_881.pt"),  # <-- CURRENTLY BEST BRAIN!!!
 #                DQN(152, load_model="Brains/DQN/model_40000_881.pt"),           # <-- CURRENTLY BEST BRAIN!!!

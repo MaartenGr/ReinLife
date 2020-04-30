@@ -2,8 +2,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
 from typing import List
-from TheGame.World.entities import Agent
-from TheGame.Models.utils import BasicBrain
+from ReinLife.World.entities import Agent
+from ReinLife.Models.utils import BasicBrain
 
 
 class Tracker:

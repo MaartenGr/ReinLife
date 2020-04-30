@@ -1,7 +1,7 @@
 from typing import List
 from tqdm import tqdm
-from TheGame.World.environment import Environment
-from TheGame.Models.utils import BasicBrain
+from ReinLife.World.environment import Environment
+from ReinLife.Models.utils import BasicBrain
 
 
 def trainer(brains: List[BasicBrain],
