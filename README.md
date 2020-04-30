@@ -10,7 +10,14 @@ learns through a reward/punishment system that allows it to learn new behavior
 during its live time. Using Reinforcement Learning, entities learn to survive, 
 reproduce, and make sure to maximize the fitness of their kin. 
 
-![alt-text-1](images/animation_medium.gif "title-1") ![alt-text-2](images/instruction.png "title-2")
+![alt-text-1](images/animation_medium.gif "title-1")
+
+
+<p float="left">
+  <img src="https://github.com/MaartenGr/ReinLife/blob/family_new/images/animation_medium.gif?raw=true" height="366"/>
+  <img src="https://github.com/MaartenGr/ReinLife/blob/family_new/images/instruction.png?raw=true" height="366"/>
+</p>
+
 
 ## Table of Contents  
 <!--ts-->
