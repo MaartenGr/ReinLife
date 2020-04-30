@@ -33,8 +33,8 @@ class Visualize:
         else:
             self.colors = [
                 (24, 255, 255),  # Light Blue
-                (255, 94, 89),  # Red
                 (255, 238, 88),  # Yellow
+                (255, 94, 89),  # Red
                 (255, 255, 255),  # White
                 (126, 87, 194),  # Purple
                 (66, 165, 245),  # Light Blue

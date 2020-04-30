@@ -16,12 +16,10 @@ sure to maximize the fitness of their kin.
 ## Table of Contents  
 <!--ts-->
    1. [Overview](#overview)
-   1. [Environment](#env)
-        1. [Entities](#env-entities)
-        2. [Movement](#env-movement)
    2. [Agents](#agents)
         1. [Actions](#agents-actions)
-        2. [Brain](#agents-brain)
+        2. [Movement](#agents-actions)
+        3. [Brain](#agents-brain)
    3. [Reward](#reward)
    4. [Algorithms](#algorithms)
    4. [Evolution](#evolution)
@@ -32,104 +30,121 @@ sure to maximize the fitness of their kin.
 
 <a name="Overview"/></a>
 ## 1. Overview
+Here, I will give a basic overview of the environment and how the simulation
+works. Any in-depth descriptions will be shown in the sections below.  
 
-In the simulation you can find entities moving independently, food
-which gives some positive nutritional value, and poison which gives some negative
-nutritional value. It is up to the entities to find a way they survive as 
-long as possible while also making sure their kin is in good shape as possible. 
+In the simulation you can find entities moving independently, attacking other
+entities, and reproducing if they are old enough. It is up to the entities to 
+find a way to survive as long as possible while also making 
+sure their kin is in good shape as possible. 
 
-![](images/environment.png)
+The environment is build upon a numpy matrix of size `n` * `m` where
+each grid has a pixel size of 24 by 24. Each location within the matrix 
+represents a location which can be occupied by only a single entity.  
 
-In the image above you can find the following objects:  
+![](images/animation.gif)
+
+In the animation above you can find the following objects:
   
-![test](images/food.png) White blocks are food which increases an entities health
+![test](images/agent.png)   
+Agents can move, attack other entities, eat, and reproduce asexually.  
+Their color indicates kinship between others with the same color. 
+They have a health of 200 which decreases 10 with each action they take.  
+
+![test](images/food.png)   
+White blocks are food which increases an entity's health by 40.
  
-![test](images/poison.png) Black blocks are poison which decreases an entities health
+![test](images/poison.png)   
+Black blocks are poison which decreases an entity's health by 40.
 
-![test](images/agents.png) These are agents which can independently move and attack
-
-
-<a name="env"/></a>
-## 2. Environment
-
-
-The basic environment is build upon a numpy matrix of size `n` * `m` where
-each grid has a pixel size of 24 by 24. The coordinate system of the environment
-follows the conventional numpy manipulations: 
- 
-![](images/numpy_array.png?raw=true)
-
-Each location within the matrix represents a location which can be occupied
-by only a single entity. 
-
-<a name="env-entities"/></a>
-#### Entities
-
-Currently, there are two types of entities:
-* Agents
-* Food
-
-`Agents` are the organisms that can move, eat, reproduce, and attack. 
-
-Within the environment we can find two types of `food`:
-* Good Food
-    * Eating this food will increase your `health`
-* Bad Food  
-    * Eating this food will decrease your `health`
-    
-    
-![](images/game.png)
-
-<a name="env-movement"/></a>
-#### Movement
-
-An entity can occupy any un-occupied space and, from that position, can move up, down, left or right. 
-Entities cannot move diagonally. 
-
-The environment has no walls, which means that if an entity moves left from the most left 
-position in the numpy matrix, then it will move to the most right position. 
-
-For example, if an entity is at position 4 (see image above) and it moves left, then it will
-end up in position 6. In other words, the environment is a fully-connected world.  
-
-**Complex Movement**  
-Although the movement in itself is not complex, it becomes more difficult as multiple
-entities want to move into the same spot. For that reason, each entity checks 
-whether the target coordinate is unoccupied and if no other entity wants to move in that space. 
-It does this iteratively as the target coordinate changes if an entity cannot move.    
-
----
+![test](images/superfood.png)   
+Red blocks are especially helpful as they have the same properties as food but 
+also multiplies an entity's maximum age by 1.2.  
 
 <a name="agents"/></a>
 ##  2. Agents
 
-Agents are entities or organism in the simulation that can move, attack, reproduce, 
-etc. independently. The agents are the size of a single position/coordinate. They currently do not span multiple
-coordinates. 
+Agents are entities or organisms in the simulation that can move, attack, 
+reproduce, and act independently. 
+
+![](images/agents.png)
 
 Each agent has the following characteristics:
 * `Health`
-    * Starts at 100 and decreases with 10 each step
+    * Starts at 200 and decreases with 10 each step
+    * Their health cannot exceed 200 
 * `Age`
     * Starts at 0 and increases 1 with each step  
-* `Gen`
-    * A gen is given to each entity simply representing an Int
-    * It is given to its offspring when it reproduces
-    * Any new agent that is not created through reproduction gets a new Int
-    * This `gen` is represented by the color of the body
-        * **NOTE**: This needs some rework as there is currently a limited set of colors    
+    * Their maximum age is 50, after which they die
+* `Gene`
+    * Each agents is given a gene, which simply represents an integer
+    * All their offspring have the same gene value
+    * Any new agent that is created not through reproduction gets a new value
+    * This `gene` is represented by the color of the body    
     
-![](images/agent.png)
-
-<a name="agents-actions"/></a>
-#### Actions
-
-An agent can perform the following actions:
+An agent can perform one of the following **eight** actions:
 * Move one space left, right, up, or down
-    * They cannot move diagonally 
-* Attack in the left, right, up, or down direction
-    * Each attack decreases the health of the other agent with 50 
+* Attack in the left, right, up, or down direction 
 
+The order of action execution is as follows:
+* Attack
+* Move
+* Eat
+* Reproduce
+
+---
+
+<a name="agents-movement"/></a>
+#### Movement
+
+An agent can occupy any un-occupied space and, from that position, can move up, 
+down, left or right. Entities cannot move diagonally. 
+
+The environment has no walls, which means that if an entity moves left from the 
+most left position in the numpy matrix, then it will move to the most right 
+position. 
+
+![test](images/numpy_array.png) 
+
+For example, if an entity is at position 4 (see image above) and it moves left, 
+then it will end up in position 6. In other words, the environment is a 
+fully-connected world.  
+
+**Complex Movement**  
+Although the movement in itself is not complex, it becomes more difficult as 
+multiple entities want to move into the same spot. For that reason, each entity 
+checks whether the target coordinate is unoccupied and if no other entity wants 
+to move in that space. It does this iteratively as the target coordinate changes 
+if an entity cannot move.    
+
+---
+
+<a name="agents-attacking"/></a>
+#### Attacking
+
+An agent can attack in one of four directions:
+* Up
+* Down
+* Left
+* Right
+
+They stand still if they attack. However, since it is the first thing they
+do, the other agent cannot move away. 
+
+When the agent successfully attacks another agent, the other agent dies and
+the attacker increases its health. Moreover, if the agent successfully
+attacks another agent, its **border** becomes **red**.
+
+---
+
+<a name="agents-observation"/></a>
+#### Observation
+
+![test](images/observation.png) 
+
+
+
+---
 
 <a name="agents-brain"/></a>
 #### Brain

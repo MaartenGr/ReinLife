@@ -153,7 +153,6 @@ class Agent(Entity):
         self.brain = brain
         self.reproduced = False
         self.gene = gene
-        self.fitness = 0
         self.action = -1
         self.killed = 0
         self.inter_killed = 0
@@ -168,6 +167,7 @@ class Agent(Entity):
         self.done = False
         self.info = None
         self.prob = None
+        self.fitness = 0
 
     def reset_killed(self):
         """ Reset all killing stats """
