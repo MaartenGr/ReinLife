@@ -54,7 +54,7 @@ def trainer(brains: List[BasicBrain],
     render : boolean, default False
         Whether to render the environment in pygame whilst training.
 
-    families: boolean, default False
+    static_families: boolean, default False
         Whether you want a set number of families to be used. Each family has its own brain defined
         by the models in the variable brains. The number of families cannot exceed the number of models
         in the brains variable.

@@ -2,7 +2,6 @@ from ReinLife.Models import D3QN, DQN, PERD3QN, PERDQN, PPO
 from ReinLife.Helpers import trainer
 
 n_episodes = 15_000
-
 brains = [PERD3QN(153, 8, train_freq=10)]
 
 trainer(brains, n_episodes=n_episodes, update_interval=300, width=30, height=30, max_agents=100,

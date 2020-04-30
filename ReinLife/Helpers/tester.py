@@ -28,10 +28,10 @@ def tester(brains: List[BasicBrain],
     max_agents : int, default 100
         The maximum number of agents can occupy the environment.
 
-    pastel_colors : bool, default True
+    pastel_colors : bool, default False
         Whether to automatically generate random pastel colors
 
-    families: boolean, default False
+    static_families: boolean, default True
         Whether you want a set number of families to be used. Each family has its own brain defined
         by the models in the variable brains. The number of families cannot exceed the number of models
         in the brains variable.

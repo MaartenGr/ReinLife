@@ -12,7 +12,7 @@ from ReinLife.Models import DQN, D3QN, PERD3QN, PPO, PERDQN
 #                        training=False)
 #                for _ in range(3)]
 main_brains = [PPO(153, 8, load_model="Experiments/Pretrained Brains/PPO/PPO/brain_gene_0.pt"),
-               DQN(153, 8, load_model="Experiments/Pretrained Brains/DQN/DQN/brain_gene_0.pt", max_epi=0, training=False),
+               DQN(153, 8, load_model="Experiments/Pretrained Brains/DQN/DQN/brain_gene_0.pt", training=False),
                D3QN(153, 8, load_model="Experiments/Pretrained Brains/D3QN/D3QN/brain_gene_0.pt", training=False),
                PERD3QN(153, 8, load_model="Experiments/Pretrained Brains/PERD3QN/Static Families/PERD3QN/brain_gene_1.pt", training=False),
                PERDQN(153, 8, load_model="Experiments/Pretrained Brains/PERDQN/PERDQN/brain_gene_1.pt", training=False)]
