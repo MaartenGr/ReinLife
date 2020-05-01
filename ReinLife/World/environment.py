@@ -242,7 +242,7 @@ class Environment:
             self.tracker.create_matplotlib(columns=3, brains=self.brains)
         fig = self.tracker.fig
 
-        saver = Saver('Experiments', google_colab=self.google_colab)
+        saver = Saver('experiments', google_colab=self.google_colab)
         settings = {"Update interval": self.tracker.update_interval,
                     "Width": self.width,
                     "Height": self.height,

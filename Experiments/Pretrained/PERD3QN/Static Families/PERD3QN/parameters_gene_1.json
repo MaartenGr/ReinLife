@@ -1,0 +1,19 @@
+{
+    "__doc__": " Prioritized Experience Replay Dueling Double Deep Q Network\n\n    Parameters:\n    -----------\n    input_dim : int\n        The input dimension\n\n    output_dim : int\n        The output dimension\n\n    exploration : int, default 1000\n        The number of epochs to explore the environment before learning\n\n    soft_update_freq : int, default 200\n        The frequency at which to align the target and eval nets\n\n    train_freq : int, default 20\n        The frequency at which to train the agent\n\n    learning_rate : float, default 1e-3\n        Learning rate\n\n    batch_size : int\n        The number of training samples to work through before the model's internal parameters are updated.\n\n    gamma : float, default 0.98\n        Discount factor. How far out should rewards in the future influence the policy?\n\n    capacity : int, default 10_000\n        Capacity of replay buffer\n\n    load_model : str, default False\n        Path to an existing model\n\n    training : bool, default True,\n        Whether to continue training or not\n    ",
+    "__module__": "TheGame.Models.PERD3QN",
+    "_method": "PERD3QN",
+    "batch_size": 64,
+    "decay": 0.99,
+    "epsilon": 0.04979417640409847,
+    "epsilon_min": 0.05,
+    "exploration": 1000,
+    "gamma": 0.99,
+    "input_dim": 153,
+    "method": "PERD3QN",
+    "n_epi": 15000,
+    "one": 1,
+    "output_dim": 8,
+    "soft_update_freq": 200,
+    "train_freq": 5,
+    "training": true
+}
