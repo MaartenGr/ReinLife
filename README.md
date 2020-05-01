@@ -113,8 +113,31 @@ demonstrate more random behavior.
   
 <a name="colab"/></a>
 ### 2.3. Google Colaboratory
-LINK FOR GOOGLE COLAB TRAINING HERE
+It is possible to run the training code in google colaboratory if you need
+more computing power. You start by installing pygame and cloning the repo:
 
+```jupyter
+!pip install pygame
+!git clone https://github.com/MaartenGr/ReinLife.git
+%cd ReinLife
+```
+
+After that, you are ready to run the training code: 
+```python
+from ReinLife.Models import PERD3QN
+from ReinLife.Helpers import trainer
+
+n_episodes = 15_000
+
+brains = [PERD3QN(train_freq=10), PERD3QN(train_freq=10)]
+
+env = trainer(brains, n_episodes=n_episodes, update_interval=300, width=30, height=30, max_agents=100,
+        visualize_results=True, print_results=False, google_colab=True, render=False, static_families=True,
+        training=True, save=True)
+```
+
+Then, simply look at the files on the left in ReinLife/experiments/... to 
+find the experiment that was run. 
 
 ---
 <a name="env"/></a>
@@ -239,12 +262,48 @@ Currently, the following algorithms are implemented that can be used as brains:
 
 In order to test the quality of the trained algorithms, I ran each
 algorithm independently against a copy of itself to test the speed at which
-they converge to a high fitness.  
+they converge to a high fitness. For each algorithm, I ran a simulation
+with a without static families.   
 
 ### PPO
 <details>
-<summary>"Results with static families"</summary>
-<img src="https://github.com/MaartenGr/ReinLife/blob/family_new/pretrained/PPO/results.png?raw=true" height="366"/>
+<summary>With static families</summary>
+<img src="https://github.com/MaartenGr/ReinLife/blob/family_new/pretrained/PPO/results.png?raw=true"/>
+</details>
+
+### DQN
+<details>
+<summary>With static families</summary>
+<img src="https://github.com/MaartenGr/ReinLife/blob/family_new/pretrained/DQN/results.png?raw=true"/>
+</details>
+
+### PER-DQN
+<details>
+<summary>With static families</summary>
+<img src="https://github.com/MaartenGr/ReinLife/blob/family_new/pretrained/PERDQN/results.png?raw=true"/>
+</details>
+
+### D3QN
+<details>
+<summary>With static families</summary>
+<img src="https://github.com/MaartenGr/ReinLife/blob/family_new/pretrained/D3QN/results.png?raw=true"/>
+</details>
+
+### PER-D3QN
+<details>
+<summary>With static families</summary>
+<img src="https://github.com/MaartenGr/ReinLife/blob/family_new/pretrained/PERD3QN/Static%20Families/results.png?raw=true"/>
+</details>
+
+<details>
+<summary>With static families</summary>
+<img src="https://github.com/MaartenGr/ReinLife/blob/family_new/pretrained/PERD3QN/NO%20Static%20Families/results.png?raw=true"/>
+</details>
+
+### PPO
+<details>
+<summary>With static families</summary>
+<img src="https://github.com/MaartenGr/ReinLife/blob/family_new/pretrained/PPO/results.png?raw=true"/>
 </details>
 
 ---
