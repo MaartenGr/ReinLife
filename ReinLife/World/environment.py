@@ -298,7 +298,6 @@ class Environment:
 
             if agent.dead:
                 reward = (-1 * alive_agents) + nr_kin_alive
-                reward = 0
                 done = True
                 info = "Dead"
             elif alive_agents == 1:
@@ -530,7 +529,13 @@ class Environment:
 
             # Choose random brain from initialized brains
             if self.static_families:
-                gene = random.choice([x for x in range(len(self.brains))])
+                genes = set([agent.gene for agent in self.agents])
+                not_alive = list(set(range(len(self.brains))).difference(genes))
+
+                if not_alive:
+                    gene = random.choice(not_alive)
+                else:
+                    gene = random.choice([x for x in range(len(self.brains))])
                 self._add_agent(random_loc=True, brain=self.brains[gene], gene=gene)
 
             # Choose brain from best agents that were alive

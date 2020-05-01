@@ -11,8 +11,8 @@ during its live time. Using Reinforcement Learning, entities learn to survive,
 reproduce, and make sure to maximize the fitness of their kin. 
 
 <p float="left">
-  <img src="https://github.com/MaartenGr/ReinLife/blob/family_new/images/animation_medium.gif?raw=true" height="366"/>
-  <img src="https://github.com/MaartenGr/ReinLife/blob/family_new/images/instruction.png?raw=true" height="366"/>
+  <img src="https://github.com/MaartenGr/ReinLife/blob/master/images/animation_medium.gif?raw=true" height="366"/>
+  <img src="https://github.com/MaartenGr/ReinLife/blob/master/images/instruction.png?raw=true" height="366"/>
 </p>
 
 
@@ -172,7 +172,7 @@ An agent can perform one of the following **eight actions**:
 * Attack in the left, right, up, or down direction 
 
 The **order** of action execution is as follows:
-* Attack ➡ Move ➡ Eat ➡ Reproduce
+* Attack -> Move -> Eat -> Reproduce
 
 #### Movement
 An agent can occupy any un-occupied space and, from that position, can move up, 
@@ -218,11 +218,11 @@ The input for the neural network can be see in the image below:
 
 There are three grids of 7x7 (example shows 5x5) that each show a specific
 observation of the environment: 
-* Health
+* `Health`
     * Shows the health of all agents within the agent's fov
-* Kinship
+* `Kinship`
     * Shows whether agents within the agent's fov are related to the agent
-* Nutrition
+* `Nutrition`
     * Shows the nutritrional value of food items within the agent's fov
 
 Thus, there are 3 * (7 * 7) + 6 = **153 input values**. 
@@ -262,48 +262,48 @@ Currently, the following algorithms are implemented that can be used as brains:
 
 In order to test the quality of the trained algorithms, I ran each
 algorithm independently against a copy of itself to test the speed at which
-they converge to a high fitness. For each algorithm, I ran a simulation
-with a without static families.   
+they converge to a high fitness. Below, you can see all algorithms
+battling it out with PER-D3QN coming out on top. Note, this does not mean
+it is necessarily the best algorithm. It might have converged faster than 
+others which limits their learning ability. 
 
-### PPO
-<details>
-<summary>With static families</summary>
-<img src="https://github.com/MaartenGr/ReinLife/blob/family_new/pretrained/PPO/results.png?raw=true"/>
-</details>
+![test](pretrained/All/results.png) 
 
+
+Moreover, for each algorithm, I ran simulations with and without static families.   
 ### DQN
 <details>
 <summary>With static families</summary>
-<img src="https://github.com/MaartenGr/ReinLife/blob/family_new/pretrained/DQN/results.png?raw=true"/>
+<img src="https://github.com/MaartenGr/ReinLife/blob/master/pretrained/DQN/results.png?raw=true"/>
 </details>
 
 ### PER-DQN
 <details>
 <summary>With static families</summary>
-<img src="https://github.com/MaartenGr/ReinLife/blob/family_new/pretrained/PERDQN/results.png?raw=true"/>
+<img src="https://github.com/MaartenGr/ReinLife/blob/master/pretrained/PERDQN/results.png?raw=true"/>
 </details>
 
 ### D3QN
 <details>
 <summary>With static families</summary>
-<img src="https://github.com/MaartenGr/ReinLife/blob/family_new/pretrained/D3QN/results.png?raw=true"/>
+<img src="https://github.com/MaartenGr/ReinLife/blob/master/pretrained/D3QN/results.png?raw=true"/>
 </details>
 
 ### PER-D3QN
 <details>
 <summary>With static families</summary>
-<img src="https://github.com/MaartenGr/ReinLife/blob/family_new/pretrained/PERD3QN/Static%20Families/results.png?raw=true"/>
+<img src="https://github.com/MaartenGr/ReinLife/blob/master/pretrained/PERD3QN/Static%20Families/results.png?raw=true"/>
 </details>
 
 <details>
 <summary>With static families</summary>
-<img src="https://github.com/MaartenGr/ReinLife/blob/family_new/pretrained/PERD3QN/NO%20Static%20Families/results.png?raw=true"/>
+<img src="https://github.com/MaartenGr/ReinLife/blob/master/pretrained/PERD3QN/No%20Static%20Families/results.png?raw=true"/>
 </details>
 
 ### PPO
 <details>
 <summary>With static families</summary>
-<img src="https://github.com/MaartenGr/ReinLife/blob/family_new/pretrained/PPO/results.png?raw=true"/>
+<img src="https://github.com/MaartenGr/ReinLife/blob/master/pretrained/PPO/results.png?raw=true"/>
 </details>
 
 ---

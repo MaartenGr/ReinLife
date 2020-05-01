@@ -216,6 +216,8 @@ class Agent(Entity):
         """ Extracts the action """
         if self.brain.method == "PPO":
             self.action, self.prob = self.brain.get_action(self.state)
+        elif self.brain.method == "PERDQN":
+            self.action = self.brain.get_action(self.state)
         else:
             self.action = self.brain.get_action(self.state, n_epi)
 

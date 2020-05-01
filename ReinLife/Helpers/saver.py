@@ -88,7 +88,7 @@ class Saver:
             json.dump(settings, f, indent=4)
 
         if fig:
-            fig.savefig(experiment_path + self.separator + "results.png", dpi=300)
+            fig.savefig(experiment_path + self.separator + "results.png", dpi=150)
 
         self._save_params(agents, agent_paths)
 

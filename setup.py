@@ -14,7 +14,7 @@ setup(
     long_description=readme,
     author='Maarten Grootendorst',
     author_email='maartengrootendorst@gmail.com',
-    url='https://github.com/MaartenGr/TheGame',
+    url='https://github.com/MaartenGr/ReinLife',
     license=license,
     packages=find_packages(exclude=('tests', 'docs'))
 )

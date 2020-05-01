@@ -7,8 +7,31 @@ follows the following style:
 - Fixed
 - Removed
 
+## [1.0] - 2020-05-01
 
-## [0.3] - 2020-XX-XX
+Major overhaul to the structure of the code, repository, and readme since
+this is the first version I feel is ready to be used by others. 
+
+### Added
+- Option to save experiments, results, and brains
+- Option to run both offline and in google colab
+- More options for controlling environment (reward system, reproduction, etc.)
+- Tester and Trainer functions
+- License
+
+
+### Changed
+- Updated requirements and removed tensorflow
+- Updated readme with all current information, visualizations, results, documentation
+etc. 
+ 
+### Fixed
+- Major optimization of code, especially in the environment
+
+### Removed
+- Removed DRQN
+
+## [0.3] - 2020-04-13
 
 ### Added
 - Added PERD3QN and D3QN
