@@ -244,9 +244,8 @@ they converge to a high fitness.
 ### PPO
 <details>
 <summary>"Results with static families"</summary>
-![](pretrained/PPO/results.png) 
+<img src="https://github.com/MaartenGr/ReinLife/blob/family_new/pretrained/PPO/results.png?raw=true" height="366"/>
 </details>
-
 
 ---
 <a name="documentation"/></a>
