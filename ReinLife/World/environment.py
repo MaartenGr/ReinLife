@@ -298,6 +298,7 @@ class Environment:
 
             if agent.dead:
                 reward = (-1 * alive_agents) + nr_kin_alive
+                reward = 0
                 done = True
                 info = "Dead"
             elif alive_agents == 1:

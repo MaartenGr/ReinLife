@@ -31,6 +31,8 @@ reproduce, and make sure to maximize the fitness of their kin.
         * [Algorithms](#env-algorithms)
    * [Results](#results)
    * [Documentation](#documentation)
+        * [Training](#doc-training)
+        * [Testing](#doc-testing)
 <!--te-->
 
 ---
@@ -58,19 +60,21 @@ also making sure their kin is in good shape as possible.
 ##  Getting Started
 [Back to TOC](#toc)  
 
+To get started, you will only need to install the requirements and 
+fork/download the ReinLife package, together with the train.py and
+test.py files. 
+
 <a name="prerequisites"/></a>
 ###  Prerequisites
-[Back to TOC](#toc)
-
 To install the requirements, simply run the following:  
 ```pip install -r requirements.txt```
 
 <a name="usage"/></a>
 ###  Usage
-[Back to TOC](#toc)
 
 Due to the many parameters within each model and the environment itself, 
-it is advised to start with train.py and test.py and look around there. 
+it is advised to start with train.py and test.py. These files have been 
+prepared such that you can run them as is.  
 
 #### Training
 To train one or models, simply run:
@@ -78,8 +82,8 @@ To train one or models, simply run:
 from ReinLife.Models import PERD3QN
 from ReinLife.Helpers import trainer
 
-brains = [PERD3QN(153, 8, train_freq=10), 
-          PERD3QN(153, 8, train_freq=10)]
+brains = [PERD3QN(), 
+          PERD3QN()]
 
 trainer(brains, n_episodes=15_000, update_interval=300, width=30, height=30, max_agents=100,
         visualize_results=True, print_results=False, static_families=False, training=True, save=True)
@@ -96,11 +100,11 @@ To test one or models, simply run:
 from ReinLife import tester
 from ReinLife.Models import DQN, D3QN, PERD3QN, PPO, PERDQN
 
-main_brains = [PPO(153, 8, load_model="pretrained/PPO/PPO/brain_gene_0.pt"),
-               DQN(153, 8, load_model="pretrained/DQN/DQN/brain_gene_0.pt", training=False),
-               D3QN(153, 8, load_model="pretrained/D3QN/D3QN/brain_gene_0.pt", training=False),
-               PERD3QN(153, 8, load_model="pretrained/PERD3QN/Static Families/PERD3QN/brain_gene_1.pt", training=False),
-               PERDQN(153, 8, load_model="pretrained/PERDQN/PERDQN/brain_gene_1.pt", training=False)]
+main_brains = [PPO(load_model="pretrained/PPO/PPO/brain_gene_0.pt"),
+               DQN(load_model="pretrained/DQN/DQN/brain_gene_0.pt", training=False),
+               D3QN(load_model="pretrained/D3QN/D3QN/brain_gene_0.pt", training=False),
+               PERD3QN(load_model="pretrained/PERD3QN/Static Families/PERD3QN/brain_gene_1.pt", training=False),
+               PERDQN(load_model="pretrained/PERDQN/PERDQN/brain_gene_1.pt", training=False)]
 tester(main_brains, width=30, height=30, max_agents=100, static_families=True, fps=10)
 ``` 
 The models above are pre-trained (see results below).  
@@ -111,7 +115,7 @@ demonstrate more random behavior.
 <a name="colab"/></a>
 ### Google Colaboratory
 LINK FOR GOOGLE COLAB TRAINING HERE
-[Back to TOC](#toc)
+
 
 ---
 <a name="env"/></a>
@@ -124,7 +128,6 @@ represents a location which can be occupied by only a single entity.
 
 <a name="env-agents"/></a>
 ### Agents ![](images/agents_transparent.png)
-[Back to TOC](#toc)
 
 Agents are entities or organisms in the simulation that can move, attack, 
 reproduce, and act independently. 
@@ -217,29 +220,37 @@ The reward structure is tricky as you want to minimize the amount you steer
 the entity towards certain behavior. For that reason, I've adopted a simple and 
 straightforward fitness measure, namely: 
 
-It gets a score of -400 if the entity dies and receives a combined score
-each step its alive. That reward is calculated as follows: 
+![test](images/reward.png) 
 
-reward = sum([other_agent.health / max_age for other_agent in self.agents if agent.gen == other_agent.gen])
+Where `r` is the reward given to agent `i` at time `t`. The `δ`
+is the Kronecker delta which is one if the the gene of agent `i`, `gi`, equals
+the gene of agent `j`, `gj`, and zero otherwise. `n` is the total number of
+agents that are alive at time `t`. Thus, the reward essentially
+checks how many agents are alive that share a gene with agent `i` at time
+`t` and divides by the total number of agents alive. 
 
-Thus, it simply sums the health of all agents (including itself) at each step. 
-The result is that its behavior is steered towards surviving as long as possible
-while keeping its kin alive.   
+The result is that an agent's behavior is only steered towards making sure 
+its gene lives on for as long as possible. 
 
-<a name="algorithms"/></a>
+<a name="env-algorithms"/></a>
 ### Algorithms
 
 Currently, the following algorithms are implemented that can be used as brains:
-* DQN
-* PER-DQN
-* A2C
+* Deep Q Network (DQN)
+* Prioritized Experience Replay Deep Q Network (PER-DQN)
+* Double Dueling Deep Q Network (D3QN)
+* Prioritized Experience Replay Double Dueling Deep Q Network (PER-D3QN)
+* Proximal Policy Optimization (PPO)
 
 ---
 <a name="documentation"/></a>
 ## Documentation
 [Back to TOC](#toc)
 
+<a name="doc-training"/></a>
 ### Training
+
+The parameters for **train.py**:
 
 | Parameter                        | Description                              | Default value                  |
 | :------------------------------- | :--------------------------------------- | :----------------------------- |
@@ -257,7 +268,10 @@ Currently, the following algorithms are implemented that can be used as brains:
 | limit_reproduction | If False, agents can reproduce indefinitely. If True, all agents can only reproduce once. | False |
 | incentivize_killing | Whether to incentivize killing by adding 0.2 everytime an agent kills another | True |
 
+<a name="doc-testing"/></a>
 ### Testing
+
+The parameters for **test.py**:
 
 | Parameter                        | Description                              | Default value                  |
 | :------------------------------- | :--------------------------------------- | :----------------------------- |
@@ -270,10 +284,8 @@ Currently, the following algorithms are implemented that can be used as brains:
 | fps | Frames per second | 10 |
 
 
-# To do:
-* List of parameters for train.py and test.py
-
-
 <!---
 Font logo: https://www.1001fonts.com/fff-forward-font.html
+
+reward latex: r_{i}^{t} = \frac{\sum_{{j, i\neq j}}^{n} \delta_{g_i, g_j} }{n}
 -->

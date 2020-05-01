@@ -12,10 +12,10 @@ class PERD3QNAgent(BasicBrain):
 
     Parameters:
     -----------
-    input_dim : int
+    input_dim : int, default 153
         The input dimension
 
-    output_dim : int
+    output_dim : int, default 8
         The output dimension
 
     exploration : int, default 1000
@@ -45,8 +45,8 @@ class PERD3QNAgent(BasicBrain):
     training : bool, default True,
         Whether to continue training or not
     """
-    def __init__(self, input_dim, output_dim, exploration=1000, soft_update_freq=200, train_freq=20, learning_rate=1e-3,
-                 batch_size=64, capacity=10000, gamma=0.99, load_model=False, training=True):
+    def __init__(self, input_dim=153, output_dim=8, exploration=1000, soft_update_freq=200, train_freq=20,
+                 learning_rate=1e-3, batch_size=64, capacity=10000, gamma=0.99, load_model=False, training=True):
         super().__init__(input_dim, output_dim, "PERD3QN")
         self.target_net = DuelingDDQN(input_dim, output_dim)
         self.eval_net = DuelingDDQN(input_dim, output_dim)

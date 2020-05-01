@@ -12,10 +12,10 @@ class PPOAgent(BasicBrain):
 
     Parameters:
     -----------
-    input_dim : int
+    input_dim : int, default 153
         The input dimension
 
-    output_dim : int
+    output_dim : int, default 8
         The output dimension
 
     learning_rate : float, default 0.0005
@@ -39,8 +39,8 @@ class PPOAgent(BasicBrain):
     load_model : str, default False
         Path to an existing model
     """
-    def __init__(self, input_dim, output_dim, learning_rate=0.0005, gamma=0.98, lmbda=0.95, eps_clip=0.1, k_epoch=3,
-                 train_freq=20, load_model=False):
+    def __init__(self, input_dim=153, output_dim=8, learning_rate=0.0005, gamma=0.98, lmbda=0.95, eps_clip=0.1,
+                 k_epoch=3, train_freq=20, load_model=False):
         super().__init__(input_dim, output_dim, "PPO")
 
         self.model = PPO(input_dim, output_dim, learning_rate, gamma, lmbda, eps_clip, k_epoch)

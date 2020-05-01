@@ -16,10 +16,10 @@ class PERDQNAgent(BasicBrain):
 
     Parameters:
     -----------
-    input_dim : int
+    input_dim : int, default 153
         The input dimension
 
-    output_dim : int
+    output_dim : int, default 8
         The output dimension
 
     explore_step : int, default 5_000
@@ -46,8 +46,8 @@ class PERDQNAgent(BasicBrain):
     training : bool, default True,
         Whether to continue training or not
     """
-    def __init__(self, input_dim, output_dim, explore_step=5_000, train_freq=20, learning_rate=0.001, batch_size=64,
-                 gamma=0.99, capacity=20000, load_model=False, training=True):
+    def __init__(self, input_dim=153, output_dim=8, explore_step=5_000, train_freq=20, learning_rate=0.001,
+                 batch_size=64, gamma=0.99, capacity=20000, load_model=False, training=True):
         super().__init__(input_dim, output_dim, "PERDQN")
 
         # get size of state and action

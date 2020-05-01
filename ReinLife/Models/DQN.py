@@ -21,10 +21,10 @@ class DQNAgent(BasicBrain):
 
     Parameters:
     -----------
-    input_dim : int
+    input_dim : int, default 153
         The input dimension
 
-    output_dim : int
+    output_dim : int, default 8
         The output dimension
 
     max_epi : int
@@ -42,7 +42,7 @@ class DQNAgent(BasicBrain):
     training : bool, default True,
         Whether to continue training or not
     """
-    def __init__(self, input_dim, output_dim, max_epi=0, learning_rate=0.0005, train_freq=20,
+    def __init__(self, input_dim=153, output_dim=8, max_epi=0, learning_rate=0.0005, train_freq=20,
                  load_model=False, training=True):
         super().__init__(input_dim, output_dim, "DQN")
         self.agent = Qnet(input_dim)
