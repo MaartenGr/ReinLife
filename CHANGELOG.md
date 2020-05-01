@@ -7,6 +7,50 @@ follows the following style:
 - Fixed
 - Removed
 
+## [1.0] - 2020-05-01
+
+Major overhaul to the structure of the code, repository, and readme since
+this is the first version I feel is ready to be used by others. 
+
+### Added
+- Option to save experiments, results, and brains
+- Option to run both offline and in google colab
+- More options for controlling environment (reward system, reproduction, etc.)
+- Tester and Trainer functions
+- License
+
+
+### Changed
+- Updated requirements and removed tensorflow
+- Updated readme with all current information, visualizations, results, documentation
+etc. 
+ 
+### Fixed
+- Major optimization of code, especially in the environment
+
+### Removed
+- Removed DRQN
+
+## [0.3] - 2020-04-13
+
+### Added
+- Added PERD3QN and D3QN
+- Added True evolution where each family has a single brain, but any amount
+of families can be created. Any new entity will have its brain "scrambled" to mimic
+mutation when evolving
+- Updated results such that it also works for any amount of families
+
+### Changed
+- Created N families such that every family has a single brain that is trained independently
+- Updated training structure to make training easier 
+- All reward, states, etc. are now preserved in the Agent class
+- Updated model structure such that all models have similar structure
+
+### Fixed
+- Updated folder structure
+
+### Removed
+- Removed older models that were not used or had significant bugs
 
 ## [0.2.4] - 2020-04-07
 

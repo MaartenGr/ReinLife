@@ -1,0 +1,11 @@
+{
+    "__doc__": " Proximal Policy Optimization Agent\n\n    Parameters:\n    -----------\n    input_dim : int, default 153\n        The input dimension\n\n    output_dim : int, default 8\n        The output dimension\n\n    learning_rate : float, default 0.0005\n        Learning rate\n\n    gamma : float, default 0.98\n        Discount factor. How far out should rewards in the future influence the policy?\n\n    lmbda : float, default 0.95\n        \u03bb is a smoothing parameter used for reducing the variance in training which makes it more stable.\n\n    eps_clip : float, default 0.1\n        \u03b5 to ensure we only make the maximum of \u03b5% change to our policy at a time.\n\n    k_epoch : int, default 3\n        Update policy each k_epoch\n\n    train_freq : int, default 20\n        The frequency at which to train the agent\n\n    load_model : str, default False\n        Path to an existing model\n    ",
+    "__module__": "ReinLife.Models.PPO",
+    "_method": "PPO",
+    "input_dim": 153,
+    "load_model": false,
+    "method": "PPO",
+    "one": 1,
+    "output_dim": 8,
+    "train_freq": 20
+}

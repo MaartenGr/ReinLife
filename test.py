@@ -1,28 +1,20 @@
-import matplotlib.pyplot as plt
+from ReinLife import tester
+from ReinLife.Models import DQN, D3QN, PERD3QN, PPO, PERDQN
 
-plt.figure(figsize=(5*5, 5))
-x = range(10)
-y = range(10,20,1)
+# main_brains = [PERDQN(152, 8, load_model="Brains/PERDQN/model_40000_881.pt"),  # <-- CURRENTLY BEST BRAIN!!!
+#                DQN(152, load_model="Brains/DQN/model_40000_881.pt"),           # <-- CURRENTLY BEST BRAIN!!!
+#                D3QN(152, 8, load_model="Brains/D3QN/model_60000_100.pt")]      # <-- CURRENTLY BEST BRAIN!!!
 
-a1 = plt.subplot(151)
-a1.plot(y,x)
-a1.set_aspect('equal')
-
-a2 = plt.subplot(152)
-a2.plot(x,y)
-a2.set_aspect('equal')
-
-a3 = plt.subplot(153)
-a3.plot(x,y)
-a3.set_aspect('equal')
-
-a4 = plt.subplot(154)
-a4.plot(x,y)
-a4.set_aspect('equal')
-
-a5 = plt.subplot(155)
-x = range(20)
-y = range(20,40,1)
-a5.plot(x,y)
-a5.set_aspect('equal')
-plt.show()
+# main_brains = [PERD3QN(153, 8, load_model="Experiments/Best Brain/PERD3QN/brain_gene_1.pt", training=False)
+#                for _ in range(8)]
+# main_brains = [PERD3QN(153, 8,
+#                        load_model="Experiments/Pretrained Brains/PERD3QN/Static Families/PERD3QN/brain_gene_1.pt",
+#                        training=False)
+#                for _ in range(3)]
+main_brains = [PPO(load_model="pretrained/PPO/PPO/brain_gene_0.pt"),
+               DQN(load_model="pretrained/DQN/DQN/brain_gene_0.pt", training=False),
+               D3QN(load_model="pretrained/D3QN/D3QN/brain_gene_0.pt", training=False),
+               PERD3QN(load_model="pretrained/PERD3QN/Static Families/PERD3QN/brain_gene_1.pt", training=False),
+               PERDQN(load_model="pretrained/PERDQN/PERDQN/brain_gene_1.pt", training=False)]
+tester(main_brains, width=30, height=20, max_agents=150, pastel_colors=False, static_families=True,
+       limit_reproduction=False, fps=10)
