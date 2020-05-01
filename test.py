@@ -1,16 +1,6 @@
 from ReinLife import tester
 from ReinLife.Models import DQN, D3QN, PERD3QN, PPO, PERDQN
 
-# main_brains = [PERDQN(152, 8, load_model="Brains/PERDQN/model_40000_881.pt"),  # <-- CURRENTLY BEST BRAIN!!!
-#                DQN(152, load_model="Brains/DQN/model_40000_881.pt"),           # <-- CURRENTLY BEST BRAIN!!!
-#                D3QN(152, 8, load_model="Brains/D3QN/model_60000_100.pt")]      # <-- CURRENTLY BEST BRAIN!!!
-
-# main_brains = [PERD3QN(153, 8, load_model="Experiments/Best Brain/PERD3QN/brain_gene_1.pt", training=False)
-#                for _ in range(8)]
-# main_brains = [PERD3QN(153, 8,
-#                        load_model="Experiments/Pretrained Brains/PERD3QN/Static Families/PERD3QN/brain_gene_1.pt",
-#                        training=False)
-#                for _ in range(3)]
 main_brains = [PPO(load_model="pretrained/PPO/PPO/brain_gene_0.pt"),
                DQN(load_model="pretrained/DQN/DQN/brain_gene_0.pt", training=False),
                D3QN(load_model="pretrained/D3QN/D3QN/brain_gene_0.pt", training=False),

@@ -7,6 +7,13 @@ follows the following style:
 - Fixed
 - Removed
 
+
+## [1.0.1] - 2020-05-01
+ 
+### Removed
+- Removed commented code in test.py and train.py
+- Removed images that were currently not used 
+
 ## [1.0] - 2020-05-01
 
 Major overhaul to the structure of the code, repository, and readme since
