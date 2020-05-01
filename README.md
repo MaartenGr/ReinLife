@@ -19,29 +19,28 @@ reproduce, and make sure to maximize the fitness of their kin.
 ## Table of Contents  
 <a name="toc"/></a>
 <!--ts-->
-   * [About the Project](#about)
-   * [Getting Started](#gettingstarted)
-        * [Prerequisites](#prerequisites)
-        * [Usage](#usage)
-        * [Google Colaboratory](#colab)
-   * [Environment](#env)
-        * [Agents](#env-agents)
-        * [Observation](#env-observation)
-        * [Reward](#env-reward)
-        * [Algorithms](#env-algorithms)
-   * [Results](#results)
-   * [Documentation](#documentation)
-        * [Training](#doc-training)
-        * [Testing](#doc-testing)
+   1. [About the Project](#about)
+   2. [Getting Started](#gettingstarted)  
+        2.1. [Prerequisites](#prerequisites)  
+        2.2. [Usage](#usage)   
+        2.3. [Google Colaboratory](#colab)  
+   3. [Environment](#env)  
+        3.1. [Agents](#env-agents)  
+        3.2. [Observation](#env-observation)  
+        3.3. [Reward](#env-reward)  
+        3.4. [Algorithms](#env-algorithms)  
+   4. [Results](#results)  
+   5. [Documentation](#documentation)  
+        5.1. [Training](#doc-training)  
+        5.2. [Testing](#doc-testing)  
 <!--te-->
 
 ---
 <a name="about"/></a>
-## About the Project
-[Back to TOC](#toc)  
+## 1. About the Project
+[Back to ToC](#toc)  
 The simulation above is a good summary of what this project is about. 
 Entities move and learn independently, eat, attack other entities, and reproduce. 
-
 This is all possible by applying Reinforcement Learning algorithms to each
 entity, such as 
 <a href="https://www.cs.toronto.edu/~vmnih/docs/dqn.pdf">DQN</a> and 
@@ -57,20 +56,20 @@ also making sure their kin is in good shape as possible.
 
 ---
 <a name="gettingstarted"/></a>
-##  Getting Started
-[Back to TOC](#toc)  
+##  2. Getting Started
+[Back to ToC](#toc)  
 
 To get started, you will only need to install the requirements and 
 fork/download the ReinLife package, together with the train.py and
 test.py files. 
 
 <a name="prerequisites"/></a>
-###  Prerequisites
+###  2.1. Prerequisites
 To install the requirements, simply run the following:  
 ```pip install -r requirements.txt```
 
 <a name="usage"/></a>
-###  Usage
+###  2.2. Usage
 
 Due to the many parameters within each model and the environment itself, 
 it is advised to start with train.py and test.py. These files have been 
@@ -113,13 +112,13 @@ make sure to set all models (except PPO) to training=False, otherwise it will
 demonstrate more random behavior.
   
 <a name="colab"/></a>
-### Google Colaboratory
+### 2.3. Google Colaboratory
 LINK FOR GOOGLE COLAB TRAINING HERE
 
 
 ---
 <a name="env"/></a>
-##  Environment
+##  3. Environment
 [Back to TOC](#toc)
 
 The environment is build upon a numpy matrix of size `n` * `m` where
@@ -127,7 +126,7 @@ each grid has a pixel size of 24 by 24. Each location within the matrix
 represents a location which can be occupied by only a single entity.
 
 <a name="env-agents"/></a>
-### Agents ![](images/agents_transparent.png)
+### 3.1. Agents ![](images/agents_transparent.png)
 
 Agents are entities or organisms in the simulation that can move, attack, 
 reproduce, and act independently. 
@@ -153,15 +152,11 @@ The **order** of action execution is as follows:
 * Attack ➡ Move ➡ Eat ➡ Reproduce
 
 #### Movement
-
 An agent can occupy any un-occupied space and, from that position, can move up, 
-down, left or right. Entities cannot move diagonally. 
-
-The environment has no walls, which means that if an entity moves left from the 
+down, left or right. Entities cannot move diagonally. The environment has no walls, which means that if an entity moves left from the 
 most left position in the numpy matrix, then it will move to the most right 
 position. In other words, the environment is a fully-connected world.  
 
-**Complex Movement**  
 Although the movement in itself is not complex, it becomes more difficult as 
 multiple entities want to move into the same spot. For that reason, each entity 
 checks whether the target coordinate is unoccupied and if no other entity wants 
@@ -169,7 +164,6 @@ to move in that space. It does this iteratively as the target coordinate changes
 if an entity cannot move.    
 
 #### Attacking ![](images/agent_attacking.png)
-
 An agent can attack in one of four directions:
 * Up, Down, Left, or Right
 
@@ -180,7 +174,6 @@ Moreover, if the agent successfully attacks another agent,
 its **border** becomes **red**.
 
 #### (Re)production
-
 Each agent learns continuously during its lifetime. The end of an episode
 is marked by the end of an agents life. 
 
@@ -191,9 +184,8 @@ When a new entity is **produced**, it inherits its brain (RL-algorithm) from
 one of the best agents we have seen so far. A list of 10 of the best agents
 is tracked during the simulation. 
 
-
 <a name="env-observation"/></a>
-### Observation
+### 3.2. Observation
 The field of view of each agent is a square surrounding the agent. 
 Since the world is fully-connected, the agent can see "through" walls.
 
@@ -214,8 +206,7 @@ Thus, there are 3 * (7 * 7) + 6 = **153 input values**.
 
 
 <a name="env-reward"/></a>
-###  Reward
-
+###  3.3. Reward
 The reward structure is tricky as you want to minimize the amount you steer
 the entity towards certain behavior. For that reason, I've adopted a simple and 
 straightforward fitness measure, namely: 
@@ -233,8 +224,7 @@ The result is that an agent's behavior is only steered towards making sure
 its gene lives on for as long as possible. 
 
 <a name="env-algorithms"/></a>
-### Algorithms
-
+### 3.4. Algorithms
 Currently, the following algorithms are implemented that can be used as brains:
 * Deep Q Network (DQN)
 * Prioritized Experience Replay Deep Q Network (PER-DQN)
@@ -243,12 +233,28 @@ Currently, the following algorithms are implemented that can be used as brains:
 * Proximal Policy Optimization (PPO)
 
 ---
+<a name="results"/></a>
+## 4. Results
+[Back to TOC](#toc)
+
+In order to test the quality of the trained algorithms, I ran each
+algorithm independently against a copy of itself to test the speed at which
+they converge to a high fitness.  
+
+### PPO
+<details>
+<summary>"Results with static families"</summary>
+![](pretrained/PPO/results.png) 
+</details>
+
+
+---
 <a name="documentation"/></a>
-## Documentation
+## 5. Documentation
 [Back to TOC](#toc)
 
 <a name="doc-training"/></a>
-### Training
+### 5.1. Training
 
 The parameters for **train.py**:
 
@@ -269,7 +275,7 @@ The parameters for **train.py**:
 | incentivize_killing | Whether to incentivize killing by adding 0.2 everytime an agent kills another | True |
 
 <a name="doc-testing"/></a>
-### Testing
+### 5.2. Testing
 
 The parameters for **test.py**:
 
