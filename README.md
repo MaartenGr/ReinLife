@@ -347,15 +347,7 @@ The parameters for **test.py**:
 | limit_reproduction | If False, agents can reproduce indefinitely. If True, all agents can only reproduce once. | False |
 | fps | Frames per second | 10 |
 
+
 ### Other work
-After making the repository public I have been made aware of a paper that seems to be working on something very similar: 
-https://arxiv.org/abs/2004.00048
-
-Unfortunately, I could not find an opensourced implementation. However, there is an interesting blog post that accompies the
-article: https://joao-abrantes.com/posts/mimicking-evolution-with-reinforcement-learning/
-
-<!---
-Font logo: https://www.1001fonts.com/fff-forward-font.html
-
-reward latex: r_{i}^{t} = \frac{\sum_{{j, i\neq j}}^{n} \delta_{g_i, g_j} }{n}
--->
+ReinLife was based on:
+* Abrantes, J. P., Abrantes, A. J., & Oliehoek, F. A. (2020). Mimicking Evolution with Reinforcement Learning. arXiv preprint arXiv:2004.00048.
